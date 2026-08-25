@@ -39,6 +39,7 @@ forbidden_modules =
     app.workflow
     app.lineage
     app.platform
+    app.storage
 
 # ---------------------------------------------------------------------------
 # 约束 3：适配层只能依赖 domain
@@ -56,6 +57,7 @@ forbidden_modules =
     app.assets
     app.lineage
     app.platform
+    app.storage
 
 # ---------------------------------------------------------------------------
 # 约束 4：API 层不得直连适配层
@@ -87,6 +89,7 @@ forbidden_modules =
     app.assets
     app.lineage
     app.platform
+    app.storage
     fastapi
     starlette
     sqlalchemy

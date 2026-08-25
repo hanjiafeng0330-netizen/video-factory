@@ -77,6 +77,8 @@ class ErrorCode(StrEnum):
     JOB_NOT_RETRYABLE = "job_not_retryable"
     IDEMPOTENCY_KEY_REUSED = "idempotency_key_reused"
     ARTIFACT_VERSION_STALE = "artifact_version_stale"
+    ARTIFACT_IMMUTABLE = "artifact_immutable"
+    ARTIFACT_STATUS_TRANSITION_INVALID = "artifact_status_transition_invalid"
     REVIEW_ALREADY_DECIDED = "review_already_decided"
 
     # --- UPSTREAM -------------------------------------------------------
@@ -170,6 +172,20 @@ ERROR_CATALOG: dict[ErrorCode, ErrorDefinition] = {
         SuggestedAction.MANUAL_REVIEW,
         409,
         "上游产物已产生新版本，当前引用被标记为可能过期（设计文档 9.2）",
+    ),
+    ErrorCode.ARTIFACT_IMMUTABLE: ErrorDefinition(
+        ErrorCategory.CONFLICT,
+        False,
+        SuggestedAction.FIX_INPUT,
+        409,
+        "产物版本内容不可变，修改必须产生新版本（设计文档 11.2）",
+    ),
+    ErrorCode.ARTIFACT_STATUS_TRANSITION_INVALID: ErrorDefinition(
+        ErrorCategory.CONFLICT,
+        False,
+        SuggestedAction.FIX_INPUT,
+        409,
+        "产物状态不允许该跃迁",
     ),
     ErrorCode.REVIEW_ALREADY_DECIDED: ErrorDefinition(
         ErrorCategory.CONFLICT, False, SuggestedAction.FIX_INPUT, 409, "该审核节点已有结论"
