@@ -62,6 +62,7 @@ class ErrorBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     code: str
+    category: str
     message: str
     retryable: bool
     suggested_action: str

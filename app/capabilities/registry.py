@@ -11,7 +11,7 @@ from typing import Any
 
 from app.capabilities.echo.capability import EchoCapability
 from app.domain.capability import Capability
-from app.domain.errors import CapabilityError, ErrorCode, SuggestedAction
+from app.domain.errors import CapabilityError, ErrorCode
 
 _CAPABILITIES: tuple[Capability[Any], ...] = (EchoCapability(),)
 
@@ -32,6 +32,4 @@ def get_capability(name: str) -> Capability[Any]:
         raise CapabilityError(
             ErrorCode.CAPABILITY_NOT_FOUND,
             f"未注册的能力：{name}",
-            retryable=False,
-            suggested_action=SuggestedAction.FIX_INPUT,
         ) from None

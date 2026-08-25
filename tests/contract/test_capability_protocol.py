@@ -68,6 +68,7 @@ async def test_unknown_capability_returns_structured_error(client: AsyncClient) 
     assert resp.status_code == 404
     assert resp.json() == {
         "code": "capability_not_found",
+        "category": "resource",
         "message": "未注册的能力：nope",
         "retryable": False,
         "suggested_action": "fix_input",

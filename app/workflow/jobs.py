@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.domain.capability import Capability, CapabilityRequest
-from app.domain.errors import CapabilityError, ErrorCode, SuggestedAction
+from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.jobs import JobRecord, JobStatus
 
 
@@ -35,8 +35,6 @@ class InMemoryJobStore:
             raise CapabilityError(
                 ErrorCode.JOB_NOT_FOUND,
                 f"任务不存在：{job_id}",
-                retryable=False,
-                suggested_action=SuggestedAction.FIX_INPUT,
             ) from None
 
     def submit(self, capability: Capability[Any], request: CapabilityRequest) -> JobRecord:
@@ -59,8 +57,6 @@ class InMemoryJobStore:
             raise CapabilityError(
                 ErrorCode.JOB_NOT_CANCELLABLE,
                 f"任务 {job_id} 已处于终态 {job.status}，无法取消",
-                retryable=False,
-                suggested_action=SuggestedAction.FIX_INPUT,
             )
         job.status = JobStatus.CANCELLED
         job.updated_at = _now()
@@ -72,8 +68,6 @@ class InMemoryJobStore:
             raise CapabilityError(
                 ErrorCode.JOB_NOT_RETRYABLE,
                 f"任务 {job_id} 当前状态为 {job.status}，只有 FAILED 或 CANCELLED 可重试",
-                retryable=False,
-                suggested_action=SuggestedAction.FIX_INPUT,
             )
         job.status = JobStatus.RETRYING
         job.attempt += 1

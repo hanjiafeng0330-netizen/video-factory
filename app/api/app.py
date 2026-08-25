@@ -7,25 +7,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.capabilities import router as capabilities_router
 from app.api.schemas import ErrorBody
-from app.domain.errors import CapabilityError, ErrorCode
+from app.domain.errors import CapabilityError
 from app.workflow.jobs import InMemoryJobStore
-
-# 错误码 → HTTP 状态码。集中一处映射，避免每个路由自己决定状态码导致对外行为不一致。
-_STATUS_BY_CODE: dict[ErrorCode, int] = {
-    ErrorCode.INVALID_PARAMETERS: 422,
-    ErrorCode.CAPABILITY_NOT_FOUND: 404,
-    ErrorCode.JOB_NOT_FOUND: 404,
-    ErrorCode.INVALID_INPUT_REFS: 422,
-    ErrorCode.MISSING_REQUIRED_PROMPT: 422,
-    ErrorCode.UNKNOWN_PROMPT_SUPPLIED: 422,
-    ErrorCode.JOB_NOT_CANCELLABLE: 409,
-    ErrorCode.JOB_NOT_RETRYABLE: 409,
-}
-
-# 新增错误码时必须同时决定它的 HTTP 语义，否则会静默退化成 500。
-_unmapped = set(ErrorCode) - _STATUS_BY_CODE.keys()
-if _unmapped:
-    raise RuntimeError(f"以下错误码未映射 HTTP 状态码：{sorted(_unmapped)}")
 
 
 def create_app() -> FastAPI:
@@ -34,16 +17,16 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(CapabilityError)
     async def _handle_capability_error(_: Request, exc: CapabilityError) -> JSONResponse:
+        # 状态码与重试语义全部来自错误码表，API 层不做二次判断，
+        # 避免出现「同一个错误在不同路由返回不同状态码」。
         body = ErrorBody(
             code=exc.code,
+            category=exc.category,
             message=exc.message,
             retryable=exc.retryable,
             suggested_action=exc.suggested_action,
         )
-        return JSONResponse(
-            status_code=_STATUS_BY_CODE.get(exc.code, 500),
-            content=body.model_dump(),
-        )
+        return JSONResponse(status_code=exc.http_status, content=body.model_dump())
 
     app.include_router(capabilities_router)
     return app
