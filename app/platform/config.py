@@ -20,8 +20,10 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Self
 
-from pydantic import BaseModel, Field, SecretStr, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.domain.model_catalog import ModelAbility, require_ability
 
 
 class Environment(StrEnum):
@@ -107,6 +109,40 @@ class VideoProviderSettings(BaseModel):
     timeout_seconds: Annotated[int, Field(ge=30, le=7200)] = 3600
 
 
+class LLMSettings(BaseModel):
+    """大模型网关（设计文档 10.1：核心业务不感知供应商差异）。
+
+    三个位置分开配置而不是共用一个模型，是因为它们的取舍完全不同：
+    - 视觉理解要逐镜头抽帧，调用量最大，倍率敏感；
+    - 文本分析要判断叙事结构，质量比倍率重要；
+    - 生图是另一类能力，模型集合完全不重叠。
+
+    每个位置都按能力校验，见 `_models_have_required_abilities`。
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    base_url: str = "https://ccproxy.yukework.com"
+    api_key: SecretStr | None = None
+    text_model: str = "claude-sonnet-4-6"
+    vision_model: str = "claude-sonnet-4-6"
+    image_model: str = "gpt-image-2"
+    timeout_seconds: Annotated[int, Field(ge=10, le=1800)] = 300
+    max_output_tokens: Annotated[int, Field(ge=256, le=32_000)] = 8000
+
+    @model_validator(mode="after")
+    def _models_have_required_abilities(self) -> Self:
+        """把模型选到不具备该能力的位置上，必须在启动时拒绝。
+
+        实测过：网关会为纯文本模型静默丢掉图片并返回 200，模型于是凭空编造画面
+        描述。那种错没有任何症状，只能在配置层拦住。
+        """
+        require_ability(self.text_model, ModelAbility.TEXT)
+        require_ability(self.vision_model, ModelAbility.VISION)
+        require_ability(self.image_model, ModelAbility.IMAGE_GENERATION)
+        return self
+
+
 class BudgetSettings(BaseModel):
     """成本上限（设计文档 18 章「成本失控」）。"""
 
@@ -127,6 +163,7 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
     storage: ObjectStorageSettings = Field(default_factory=ObjectStorageSettings)
+    llm: LLMSettings = Field(default_factory=LLMSettings)
     video_provider: VideoProviderSettings = Field(default_factory=VideoProviderSettings)
     budget: BudgetSettings = Field(default_factory=BudgetSettings)
 
@@ -167,6 +204,10 @@ class Settings(BaseSettings):
         _reject_weak(self.environment, "database.password", self.database.password)
         _reject_weak(self.environment, "storage.secret_key", self.storage.secret_key)
 
+        if self.llm.api_key is None:
+            raise ValueError("生产环境必须配置大模型网关密钥")
+        _reject_weak(self.environment, "llm.api_key", self.llm.api_key)
+
         if self.video_provider.name == "mock":
             raise ValueError("生产环境禁止使用 mock 视频供应商")
         if self.video_provider.api_key is None:
@@ -200,6 +241,13 @@ class Settings(BaseSettings):
                 "bucket_raw": self.storage.bucket_raw,
                 "bucket_generated": self.storage.bucket_generated,
                 "signed_url_ttl_seconds": self.storage.signed_url_ttl_seconds,
+            },
+            "llm": {
+                "base_url": self.llm.base_url,
+                "api_key_configured": self.llm.api_key is not None,
+                "text_model": self.llm.text_model,
+                "vision_model": self.llm.vision_model,
+                "image_model": self.llm.image_model,
             },
             "video_provider": {
                 "name": self.video_provider.name,
