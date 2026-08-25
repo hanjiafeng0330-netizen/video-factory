@@ -1,0 +1,86 @@
+# 本地开发栈（设计文档 15.1）。
+#
+# 只包含一期真正需要的四件基础设施：PostgreSQL、Redis、MinIO，外加一次性的
+# 建桶任务。刻意不放 Elasticsearch 与向量库——一期用 PG 全文检索 + pgvector
+# 顶住（开发计划 1.1 节），提前起两个中间件只会让本地栈更重、启动更慢。
+#
+# 用法：
+#   docker compose up -d
+#   VF_ENVIRONMENT=dev pytest -m integration
+#
+# 这里的凭据是本地固定值，仅供 dev/test。生产环境的密钥由集中式密钥管理注入，
+# 不使用本文件（设计文档 13.2）。
+
+name: video-factory
+
+services:
+  postgres:
+    # pgvector 官方镜像 = postgres 16 + vector 扩展，省得自己构建
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: video_factory
+      POSTGRES_PASSWORD: local_dev_only
+      POSTGRES_DB: vf_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/postgres-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U video_factory -d vf_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: video_factory
+      MINIO_ROOT_PASSWORD: local_dev_only
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 原始资产与生成资产必须分桶（设计文档 11.1）。这个一次性任务保证本地栈起来
+  # 后桶就已存在，避免每个开发各自手动建桶、名字还各不相同。
+  minio_init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 video_factory local_dev_only
+        mc mb --ignore-existing local/vf-dev-raw
+        mc mb --ignore-existing local/vf-dev-generated
+        mc mb --ignore-existing local/vf-test-raw
+        mc mb --ignore-existing local/vf-test-generated
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

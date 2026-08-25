@@ -101,7 +101,9 @@ warn_required_dynamic_aliases = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-q --strict-markers"
+# 默认排除集成测试：`pytest` 必须在没有 docker 的机器上也能跑通，否则开发会
+# 习惯性跳过整个测试套件。集成测试用 `pytest -m integration` 显式触发。
+addopts = "-q --strict-markers -m 'not integration'"
 markers = [
     "integration: 需要 docker compose 本地栈",
     "contract: 协议与边界契约测试",

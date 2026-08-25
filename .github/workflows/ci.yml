@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: "0.9.7"
+
+jobs:
+  # 静态检查与不依赖基础设施的测试。跑的是 scripts/check.sh，与本地完全一致——
+  # 在这里另写一遍命令列表迟早会和本地漂移。
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: 安装依赖
+        run: uv sync --extra dev
+
+      - name: 校验（静态检查 + 边界契约 + 单元与契约测试）
+        run: uv run bash scripts/check.sh
+
+  # 集成测试单独一个 job：它需要基础设施，失败原因和静态检查完全不同，
+  # 混在一起会让「代码写错了」和「中间件没起来」难以区分。
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: video_factory
+          POSTGRES_PASSWORD: local_dev_only
+          POSTGRES_DB: vf_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U video_factory -d vf_dev"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: video_factory
+          MINIO_ROOT_PASSWORD: local_dev_only
+          MINIO_DEFAULT_BUCKETS: vf-dev-raw,vf-dev-generated,vf-test-raw,vf-test-generated
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "mc ready local"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: 安装依赖
+        run: uv sync --extra dev
+
+      # GitHub Actions 的 services 不支持挂载初始化脚本，只能在这里补执行。
+      # 内容与 docker-compose 用的 scripts/postgres-init.sql 保持一致。
+      - name: 初始化数据库
+        env:
+          PGPASSWORD: local_dev_only
+        run: |
+          psql -h localhost -U video_factory -d vf_dev \
+            -v ON_ERROR_STOP=1 -f scripts/postgres-init.sql
+
+      - name: 集成测试
+        env:
+          VF_ENVIRONMENT: dev
+        run: uv run pytest -m integration
