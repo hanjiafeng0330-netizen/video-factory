@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.domain.errors import CapabilityError, ErrorCode
+from app.domain.lineage import ArtifactRelation, LineageRecorder, infer_relation
 from app.domain.refs import ArtifactRef, ArtifactType
 from app.domain.versioning import (
     ArtifactStatus,
@@ -29,9 +30,21 @@ from app.domain.versioning import (
 
 
 class InMemoryArtifactRepository:
-    def __init__(self) -> None:
+    def __init__(self, lineage: LineageRecorder | None = None) -> None:
         self._versions: dict[tuple[ArtifactType, str], list[ArtifactVersion]] = defaultdict(list)
         self._dependents: dict[ArtifactRef, list[ArtifactRef]] = defaultdict(list)
+        self._lineage = lineage
+        self._workflow_run_id: str | None = None
+
+    def bind_workflow_run(self, workflow_run_id: str | None) -> None:
+        """把后续写入归属到某次流程运行。
+
+        编排器在启动一次运行时设置它，血缘记录随之带上 `workflow_run_id`。
+        做成仓储状态而不是 `create_version()` 的参数，是为了让能力模块无需感知
+        自己是否运行在流程里——独立调用与流程内调用的能力代码完全一致
+        （设计文档 5.2）。
+        """
+        self._workflow_run_id = workflow_run_id
 
     # ------------------------------------------------------------------ 写
 
@@ -66,6 +79,22 @@ class InMemoryArtifactRepository:
 
         for source in sources:
             self._dependents[source].append(version.ref)
+
+        # 血缘在这里写，而不是让每个能力模块自己记得写。血缘的价值全在完整性：
+        # 只要有一处忘写那条链就断了，而断点只有在几个月后回溯某条成片时才会
+        # 暴露，此时已无法补回。
+        if self._lineage is not None:
+            now = datetime.now(UTC)
+            for source in sources:
+                self._lineage.record(
+                    ArtifactRelation(
+                        source=source,
+                        target=version.ref,
+                        relation_type=infer_relation(source, version.ref),
+                        workflow_run_id=self._workflow_run_id,
+                        created_at=now,
+                    )
+                )
 
         propagate_staleness(self, version, now=datetime.now(UTC))
         return version
