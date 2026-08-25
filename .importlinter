@@ -42,6 +42,7 @@ forbidden_modules =
     app.lineage
     app.platform
     app.storage
+    app.bootstrap
 
 # ---------------------------------------------------------------------------
 # 约束 3：适配层只能依赖 domain
@@ -60,6 +61,7 @@ forbidden_modules =
     app.lineage
     app.platform
     app.storage
+    app.bootstrap
 
 # ---------------------------------------------------------------------------
 # 约束 4：API 层不得直连适配层
@@ -72,6 +74,8 @@ source_modules =
     app.api
 forbidden_modules =
     app.adapters
+    app.storage
+    app.bootstrap
 
 # ---------------------------------------------------------------------------
 # 约束 5：domain 是无框架依赖的纯领域层
@@ -92,6 +96,7 @@ forbidden_modules =
     app.lineage
     app.platform
     app.storage
+    app.bootstrap
     fastapi
     starlette
     sqlalchemy

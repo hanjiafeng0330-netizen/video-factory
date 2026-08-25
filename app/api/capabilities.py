@@ -6,20 +6,26 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Request
 
+from app.api.deps import container_of
 from app.api.schemas import (
     CapabilityListBody,
     ExecuteRequestBody,
     JobBody,
     ResultBody,
 )
-from app.capabilities.registry import get_capability, list_capabilities
-from app.domain.capability import CapabilityRequest, CapabilitySpec
+from app.domain.capability import Capability, CapabilityRequest, CapabilitySpec
 from app.domain.jobs import JobRecord
 from app.workflow.jobs import InMemoryJobStore
 
 router = APIRouter()
+
+
+def _capability(request: Request, name: str) -> Capability[Any]:
+    return container_of(request).capabilities.get(name)
 
 
 def _job_store(request: Request) -> InMemoryJobStore:
@@ -62,23 +68,25 @@ def _to_job_body(job: JobRecord) -> JobBody:
 
 
 @router.get("/capabilities", response_model=CapabilityListBody)
-async def list_all() -> CapabilityListBody:
+async def list_all(request: Request) -> CapabilityListBody:
     """列出全部能力及其自描述。
 
     配置管理台（T2-6）用它来渲染「各环节分别使用了哪些提示词」。
     """
-    return CapabilityListBody(capabilities=tuple(c.spec() for c in list_capabilities()))
+    return CapabilityListBody(
+        capabilities=tuple(c.spec() for c in container_of(request).capabilities.all())
+    )
 
 
 @router.get("/capabilities/{capability}/schema", response_model=CapabilitySpec)
-async def get_schema(capability: str) -> CapabilitySpec:
-    return get_capability(capability).spec()
+async def get_schema(capability: str, request: Request) -> CapabilitySpec:
+    return _capability(request, capability).spec()
 
 
 @router.post("/capabilities/{capability}/execute", response_model=ResultBody)
-async def execute(capability: str, body: ExecuteRequestBody) -> ResultBody:
+async def execute(capability: str, body: ExecuteRequestBody, request: Request) -> ResultBody:
     """同步执行，用于预览、调试和短时任务（设计文档 3.1）。"""
-    result = await get_capability(capability).execute(_to_domain(body))
+    result = await _capability(request, capability).execute(_to_domain(body))
     return ResultBody(
         output_refs=result.output_refs,
         metrics=result.metrics,
@@ -92,7 +100,7 @@ async def submit_job(capability: str, body: ExecuteRequestBody, request: Request
 
     契约校验在提交时就做，避免把一个必然失败的请求排进队列。
     """
-    cap = get_capability(capability)
+    cap = _capability(request, capability)
     domain_request = _to_domain(body)
     cap.validate_request(domain_request)
     return _to_job_body(_job_store(request).submit(cap, domain_request))
@@ -111,5 +119,5 @@ async def cancel_job(job_id: str, request: Request) -> JobBody:
 @router.post("/jobs/{job_id}/retry", response_model=JobBody)
 async def retry_job(job_id: str, request: Request) -> JobBody:
     store = _job_store(request)
-    cap = get_capability(store.get(job_id).capability)
+    cap = _capability(request, store.get(job_id).capability)
     return _to_job_body(store.retry(cap, job_id))

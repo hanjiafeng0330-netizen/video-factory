@@ -10,20 +10,21 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Mapping
+from pathlib import Path
 from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.app import create_app
+from app.bootstrap.dev import create_dev_app
 from app.domain.jobs import JobStatus
 
 PROMPT = {"key": "echo.system", "version": 1, "text": "PREFIX"}
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[AsyncClient]:
-    app = create_app()
+async def client(tmp_path: Path) -> AsyncIterator[AsyncClient]:
+    app = create_dev_app(tmp_path / "assets")
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

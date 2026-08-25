@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>营销视频生产系统 · 开发验收页</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --line: #262b35;
+    --text: #e6e8ec; --dim: #8b93a3; --accent: #4f8cff;
+    --ok: #3ecf8e; --warn: #e6a23c; --err: #f56c6c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.6 -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
+  }
+  header {
+    padding: 20px 28px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #2a2113; color: var(--warn); border: 1px solid #4a3a1c;
+  }
+  main { padding: 24px 28px; max-width: 1180px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px; margin-bottom: 20px;
+  }
+  .panel h2 {
+    font-size: 13px; margin: 0 0 16px; color: var(--dim);
+    text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
+  }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 12px; color: var(--dim); }
+  input, select, button {
+    font: inherit; background: #10131a; color: var(--text);
+    border: 1px solid var(--line); border-radius: 7px; padding: 8px 11px;
+  }
+  input[type=file] { padding: 7px; }
+  button {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff; cursor: pointer; font-weight: 600; padding: 9px 20px;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .hint { color: var(--dim); font-size: 12px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; }
+  .kv dt { color: var(--dim); }
+  .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .frames { display: flex; gap: 12px; flex-wrap: wrap; }
+  .frame { width: 116px; }
+  .frame img {
+    width: 116px; height: 206px; object-fit: cover;
+    border-radius: 7px; border: 1px solid var(--line); display: block;
+  }
+  .frame span { font-size: 11px; color: var(--dim); display: block; margin-top: 5px; }
+  .timeline {
+    display: flex; height: 34px; border-radius: 7px; overflow: hidden;
+    border: 1px solid var(--line); margin-bottom: 12px;
+  }
+  .seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #0b0d11; font-weight: 700;
+    border-right: 1px solid var(--bg);
+  }
+  .seg:last-child { border-right: none; }
+  code { background: #10131a; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  .lineage div { font-family: ui-monospace, monospace; font-size: 12px; }
+  .err {
+    background: #2a1416; border: 1px solid #5a2528; color: #ffb4b4;
+    padding: 12px 14px; border-radius: 8px; white-space: pre-wrap;
+  }
+  .ok { color: var(--ok); }
+  .hidden { display: none; }
+  .spin::after {
+    content: ''; display: inline-block; width: 11px; height: 11px;
+    margin-left: 9px; border: 2px solid #fff6; border-top-color: #fff;
+    border-radius: 50%; animation: r .7s linear infinite; vertical-align: -1px;
+  }
+  @keyframes r { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>营销视频生产系统</h1>
+  <span class="badge">开发验收页 · 非运营工作台</span>
+  <span class="hint" style="margin:0">内存仓储，重启即清空</span>
+</header>
+
+<main>
+  <div class="panel">
+    <h2>上传并拆分</h2>
+    <form id="form">
+      <div class="row">
+        <div class="field">
+          <label>视频文件</label>
+          <input type="file" name="file" accept="video/*" required>
+        </div>
+        <div class="field">
+          <label>来源平台</label>
+          <select name="source_platform">
+            <option value="douyin">抖音</option>
+            <option value="kuaishou">快手</option>
+            <option value="xiaohongshu">小红书</option>
+            <option value="bilibili">B站</option>
+            <option value="wechat_channels">视频号</option>
+            <option value="other">其他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>授权口径</label>
+          <select name="rights_status">
+            <option value="reference_only">仅参考分析</option>
+            <option value="licensed">已获授权</option>
+            <option value="owned">自有素材</option>
+            <option value="unknown">未标注（会被拒绝）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>切分灵敏度 <span id="sv">0.50</span></label>
+          <input type="range" name="shot_sensitivity" min="0.05" max="0.95"
+                 step="0.05" value="0.5" id="sens">
+        </div>
+        <button type="submit" id="go">开始分析</button>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="field" style="flex:1">
+          <label>入库理由（必填，至少 4 字）</label>
+          <input name="selection_reason" value="开发环境手动验收" required minlength="4">
+        </div>
+      </div>
+      <p class="hint">
+        授权口径选「未标注」会被拒绝，这是设计文档 13.3 的硬校验，可以用来验证拦截。
+        同一个视频重复上传会成为同一逻辑产物的新版本，不会重复存储文件。
+      </p>
+    </form>
+  </div>
+
+  <div id="error" class="panel hidden">
+    <h2>失败</h2>
+    <div class="err" id="errorBody"></div>
+  </div>
+
+  <div id="result" class="hidden">
+    <div class="panel">
+      <h2>媒体信息</h2>
+      <dl class="kv" id="meta"></dl>
+    </div>
+
+    <div class="panel">
+      <h2>镜头切分</h2>
+      <div class="timeline" id="timeline"></div>
+      <table>
+        <thead><tr><th>#</th><th>开始</th><th>结束</th><th>时长</th><th>关键帧位置</th></tr></thead>
+        <tbody id="shots"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>关键帧</h2>
+      <div class="frames" id="frames"></div>
+      <p class="hint" id="frameHint"></p>
+    </div>
+
+    <div class="panel">
+      <h2>音轨</h2>
+      <div id="audio"></div>
+    </div>
+
+    <div class="panel">
+      <h2>血缘回溯</h2>
+      <div class="lineage" id="lineage"></div>
+      <p class="hint">血缘由仓储在产物落地时自动写入，能力代码里没有一行写血缘。</p>
+    </div>
+
+    <div class="panel">
+      <h2>版本</h2>
+      <div id="versions"></div>
+      <p class="hint">重复上传同一视频或重跑预处理会产生新版本，旧版本仍可查。</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const ms = (v) => (v / 1000).toFixed(2) + 's';
+const HUES = [205, 145, 35, 280, 0, 175, 60, 320];
+
+$('sens').addEventListener('input', (e) => { $('sv').textContent = (+e.target.value).toFixed(2); });
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = $('go');
+  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
+  $('error').classList.add('hidden');
+  $('result').classList.add('hidden');
+
+  try {
+    const resp = await fetch('/dev/analyze', { method: 'POST', body: new FormData(e.target) });
+    const data = await resp.json();
+    if (!resp.ok) {
+      $('errorBody').textContent =
+        `${data.code || resp.status}  [${data.category || '-'}]\n${data.message || JSON.stringify(data, null, 2)}` +
+        (data.suggested_action ? `\n\n建议动作：${data.suggested_action}   可重试：${data.retryable}` : '');
+      $('error').classList.remove('hidden');
+      return;
+    }
+    render(data);
+  } catch (err) {
+    $('errorBody').textContent = String(err);
+    $('error').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '开始分析';
+  }
+});
+
+function render(d) {
+  const m = d.preprocess.metadata;
+  const shots = d.preprocess.shots;
+
+  $('meta').innerHTML = [
+    ['分辨率', `${m.width} × ${m.height}`],
+    ['比例', m.width && m.height ? ratio(m.width, m.height) : '-'],
+    ['时长', ms(m.duration_ms)],
+    ['帧率', m.fps.toFixed(2) + ' fps'],
+    ['视频编码', m.video_codec || '-'],
+    ['音频编码', m.audio_codec || '（无音轨）'],
+    ['热点产物', `<code>${d.hot_video.ref}</code>`],
+    ['预处理产物', `<code>${d.preprocess.ref}</code>`],
+    ['入库理由', d.hot_video.body.selection_reason],
+  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+
+  const total = shots[shots.length - 1].end_ms;
+  $('timeline').innerHTML = shots.map((s, i) => {
+    const pct = ((s.end_ms - s.start_ms) / total * 100).toFixed(3);
+    return `<div class="seg" style="width:${pct}%;background:hsl(${HUES[i % HUES.length]} 62% 62%)"
+             title="${ms(s.start_ms)} – ${ms(s.end_ms)}">${i}</div>`;
+  }).join('');
+
+  $('shots').innerHTML = shots.map((s) => `<tr>
+      <td>${s.index}</td><td>${ms(s.start_ms)}</td><td>${ms(s.end_ms)}</td>
+      <td>${s.end_ms - s.start_ms} ms</td>
+      <td>${ms(Math.floor(s.start_ms + (s.end_ms - s.start_ms) / 2))}</td>
+    </tr>`).join('');
+
+  $('frames').innerHTML = d.preprocess.keyframe_asset_ids.map((id, i) => `
+    <div class="frame">
+      <img src="/dev/assets/${id}" loading="lazy" alt="镜头 ${i}">
+      <span>镜头 ${i} · ${ms(d.preprocess.keyframe_at_ms[i])}</span>
+    </div>`).join('');
+  $('frameHint').textContent = d.preprocess.truncated_keyframes
+    ? `已达上限，只抽取了 ${d.preprocess.keyframe_asset_ids.length} 帧，实际有 ${shots.length} 个镜头。`
+    : `每个镜头一帧，取镜头中点而非首帧（首帧常落在转场上，抽出来是黑帧或糊图）。`;
+
+  $('audio').innerHTML = d.preprocess.audio_asset_id
+    ? `<audio controls src="/dev/assets/${d.preprocess.audio_asset_id}" style="width:100%"></audio>
+       <p class="hint">已统一转成 16kHz 单声道 WAV，供后续 ASR 直接消费。资产 <code>${d.preprocess.audio_asset_id}</code></p>`
+    : `<p class="hint">该视频无音轨。</p>`;
+
+  $('lineage').innerHTML = d.lineage.map((n) =>
+    `<div>${'&nbsp;'.repeat(n.depth * 4)}${n.depth ? '└─ ' : ''}${n.ref}` +
+    `${n.relation ? ` <span style="color:var(--dim)">(${n.relation})</span>` : ''}</div>`
+  ).join('');
+
+  $('versions').innerHTML = `<dl class="kv">
+    <dt>热点视频版本数</dt><dd>${d.versions.hot_video}</dd>
+    <dt>预处理版本数</dt><dd>${d.versions.preprocess}</dd></dl>`;
+
+  $('result').classList.remove('hidden');
+}
+
+function ratio(w, h) {
+  const g = (a, b) => b ? g(b, a % b) : a;
+  const d = g(w, h);
+  return `${w / d}:${h / d}`;
+}
+</script>
+</body>
+</html>
