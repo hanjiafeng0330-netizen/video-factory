@@ -17,6 +17,7 @@ modules =
     app.capabilities.preprocess_video
     app.capabilities.ingest_hot_video
     app.capabilities.transcribe
+    app.capabilities.understand_video
     app.capabilities.preprocess
     app.capabilities.understand
     app.capabilities.pattern_extract
@@ -44,6 +45,7 @@ forbidden_modules =
     app.platform
     app.storage
     app.bootstrap
+    app.prompts
 
 # ---------------------------------------------------------------------------
 # 约束 3：适配层只能依赖 domain
@@ -63,6 +65,7 @@ forbidden_modules =
     app.platform
     app.storage
     app.bootstrap
+    app.prompts
 
 # ---------------------------------------------------------------------------
 # 约束 4：API 层不得直连适配层
@@ -98,6 +101,7 @@ forbidden_modules =
     app.platform
     app.storage
     app.bootstrap
+    app.prompts
     fastapi
     starlette
     sqlalchemy

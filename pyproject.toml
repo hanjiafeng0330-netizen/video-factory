@@ -17,6 +17,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "celery>=5.4",
     "redis>=5.1",
+    "jinja2>=3.1",
     # 镜头切分。用 ContentDetector 比较 HSV 逐像素差异，
     # 而不是 ffmpeg 只看亮度的 scene 滤镜（见 app/adapters/media/scene_detect.py）。
     "scenedetect>=0.7",
