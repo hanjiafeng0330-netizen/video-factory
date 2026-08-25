@@ -117,8 +117,15 @@ class AudioExtractor(Protocol):
 
 
 class ShotDetector(Protocol):
-    def detect_shots(self, source: Path, *, metadata: MediaMetadata, threshold: float) -> ShotList:
+    def detect_shots(
+        self, source: Path, *, metadata: MediaMetadata, sensitivity: float
+    ) -> ShotList:
         """切分镜头。
+
+        `sensitivity` 取 0~1，越大切得越碎。用「灵敏度」而不是「阈值」命名是因为
+        不同检测库的阈值方向相反（有的越大越敏感，有的越小越敏感），暴露阈值必然
+        被传错方向，而传错方向的症状是「镜头数不对」——很容易被当成视频本身的特性
+        而不是参数问题。
 
         实现必须返回首尾相接、覆盖全片的镜头列表；检测不到任何切换时返回
         单个覆盖全片的镜头，而不是空列表——空列表会让下游需要到处判空。

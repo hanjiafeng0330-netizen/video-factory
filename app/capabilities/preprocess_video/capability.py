@@ -42,8 +42,8 @@ from app.domain.versioning import ArtifactRepository, ArtifactStatus
 class PreprocessParameters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    scene_threshold: float = Field(default=0.30, ge=0.05, le=0.95)
-    """镜头切分灵敏度。越低切得越碎。0.30 对短视频快剪比较稳。"""
+    shot_sensitivity: float = Field(default=0.5, ge=0.05, le=0.95)
+    """镜头切分灵敏度，越大切得越碎。0.5 对应检测库的默认值，是已验证可用的点。"""
 
     extract_audio: bool = True
     extract_keyframes: bool = True
@@ -124,7 +124,7 @@ class PreprocessVideoCapability(Capability[PreprocessParameters]):
 
         metadata = self._probe.probe(source)
         shot_list = self._shots.detect_shots(
-            source, metadata=metadata, threshold=params.scene_threshold
+            source, metadata=metadata, sensitivity=params.shot_sensitivity
         )
 
         with tempfile.TemporaryDirectory(prefix="vf_preprocess_") as workdir:

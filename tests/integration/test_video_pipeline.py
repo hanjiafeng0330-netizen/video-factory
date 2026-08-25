@@ -92,6 +92,80 @@ def sample_video(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return out
 
 
+@pytest.fixture(scope="module")
+def hue_only_cut_video(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """含一处**纯色相**切换的视频：绿 #007f00 → 深蓝 #000080。
+
+    两者饱和度与明度相同，只有色相不同。这类切换是 ContentDetector 用库默认阈值
+    会漏掉的（得分 20 < 27），也是最初用 ffmpeg scene 滤镜完全检不出的。
+    """
+    out = tmp_path_factory.mktemp("media") / "hue_only.mp4"
+    subprocess.run(  # noqa: S603
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=green:s=360x640:d=3,format=yuv420p",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=navy:s=360x640:d=3,format=yuv420p",
+            "-filter_complex",
+            "[0:v][1:v]concat=n=2:v=1:a=0[v]",
+            "-map",
+            "[v]",
+            "-r",
+            "25",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=120,
+    )
+    return out
+
+
+@pytest.fixture(scope="module")
+def continuous_motion_video(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """单一连续镜头，持续旋转 + 色相漂移，**没有任何切换**。
+
+    用于验证检测器不会把镜头内的运动误判成切换。把阈值调到能检出纯色相切换的
+    ContentDetector 在这条素材上会误切 4 处。
+    """
+    out = tmp_path_factory.mktemp("media") / "motion.mp4"
+    subprocess.run(  # noqa: S603
+        [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc2=s=360x640:d=8:r=25",
+            "-vf",
+            "rotate=a=t*0.6:c=black,hue=h=t*90",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            str(out),
+        ],
+        check=True,
+        capture_output=True,
+        timeout=120,
+    )
+    return out
+
+
 @dataclass(frozen=True)
 class Pipeline:
     ingest: IngestHotVideoCapability
@@ -249,6 +323,31 @@ async def test_shots_are_contiguous_on_real_video(pipeline: Pipeline, sample_vid
     assert shots[0].start_ms == 0
     for previous, current in itertools.pairwise(shots):
         assert current.start_ms == previous.end_ms
+
+
+async def test_hue_only_cut_is_detected(pipeline: Pipeline, hue_only_cut_video: Path) -> None:
+    """回归：纯色相切换必须被检出。
+
+    漏掉的镜头边界会让分镜对齐和关键帧全部继承错误，而这种错在成片里表现为
+    「画面和口播差半拍」，几乎不可能追溯回切分阶段。
+    """
+    _, out_ref = await run_chain(pipeline, hue_only_cut_video)
+    body = read_result(pipeline, out_ref)
+
+    assert body.shots.count == 2, f"应检出 3s 处的切点，实际镜头：{body.shots.shots}"
+    assert abs(body.shots.shots[1].start_ms - 3000) < 300
+
+
+async def test_continuous_motion_is_not_over_segmented(
+    pipeline: Pipeline, continuous_motion_video: Path
+) -> None:
+    """回归：镜头内的运动不能被误判成切换。
+
+    过度切分同样有害：它会把关键帧数量和后续视觉理解成本放大好几倍，还会让分镜
+    出现大量没有意义的短镜头。
+    """
+    _, out_ref = await run_chain(pipeline, continuous_motion_video)
+    assert read_result(pipeline, out_ref).shots.count == 1
 
 
 async def test_preprocess_output_is_traceable(pipeline: Pipeline, sample_video: Path) -> None:
