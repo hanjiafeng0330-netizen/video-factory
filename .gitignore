@@ -28,5 +28,8 @@ build/
 *.key
 
 # 本地媒体产物（不入库，走对象存储）
+# 注意目录名带前导点：写成 /local_assets/ 会漏掉 .local_assets/，
+# 实测漏过一次——1MB 的视频与关键帧被提交进了仓库。
 /tmp/
+/.local_assets/
 /local_assets/
