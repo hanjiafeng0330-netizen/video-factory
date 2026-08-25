@@ -25,6 +25,29 @@ from app.platform.config import Environment, Settings
 pytestmark = pytest.mark.integration
 
 
+def _stack_is_up() -> bool:
+    """本地栈是否可达。
+
+    跑不起来时整体跳过而不是报红：「中间件没起来」和「代码写错了」是两类问题，
+    前者报成失败会淹没后者，久了就没人看集成测试的结果了。
+    """
+    import socket
+
+    for host, port in (("localhost", 5432), ("localhost", 6379), ("localhost", 9000)):
+        with socket.socket() as probe:
+            probe.settimeout(1)
+            if probe.connect_ex((host, port)) != 0:
+                return False
+    return True
+
+
+if not _stack_is_up():  # pragma: no cover
+    pytest.skip(
+        "本地栈未启动。执行 docker compose up -d 后重试。",
+        allow_module_level=True,
+    )
+
+
 @pytest.fixture(scope="module")
 def dev() -> Settings:
     return Settings(environment=Environment.DEV)

@@ -18,6 +18,7 @@ class ArtifactType(StrEnum):
 
     HOT_VIDEO = "hot_video"
     MEDIA_ASSET = "media_asset"
+    PREPROCESS_RESULT = "preprocess_result"
     VIDEO_ANALYSIS = "video_analysis"
     SCRIPT_PATTERN = "script_pattern"
     PRODUCT_PROFILE = "product_profile"

@@ -17,6 +17,9 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "celery>=5.4",
     "redis>=5.1",
+    # 镜头切分。用 ContentDetector 比较 HSV 逐像素差异，
+    # 而不是 ffmpeg 只看亮度的 scene 滤镜（见 app/adapters/media/scene_detect.py）。
+    "scenedetect>=0.7",
 ]
 
 [project.optional-dependencies]
@@ -67,7 +70,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106"]
+# S607：测试通过 PATH 查找 ffmpeg 是刻意的。写死 /opt/homebrew/bin/ffmpeg
+# 会让 CI 和容器里跑不起来。
+"tests/**" = ["S105", "S106", "S607"]
 "scripts/**" = ["T201"]
 # app.platform 与 stdlib platform 同名，但包内一律使用绝对导入，
 # `import platform` 仍解析到标准库，不存在实际遮蔽。
@@ -89,7 +94,8 @@ files = ["app", "workers", "tests"]
 exclude = '(^|/)\._'
 
 [[tool.mypy.overrides]]
-module = ["celery.*"]
+# 这些库不带类型标注。只在此处放行，不放宽全局 strict。
+module = ["celery.*", "scenedetect.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

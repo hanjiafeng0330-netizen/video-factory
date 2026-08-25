@@ -65,6 +65,7 @@ class SubjectType(StrEnum):
 
     HOT_VIDEO = ArtifactType.HOT_VIDEO
     MEDIA_ASSET = ArtifactType.MEDIA_ASSET
+    PREPROCESS_RESULT = ArtifactType.PREPROCESS_RESULT
     VIDEO_ANALYSIS = ArtifactType.VIDEO_ANALYSIS
     SCRIPT_PATTERN = ArtifactType.SCRIPT_PATTERN
     PRODUCT_PROFILE = ArtifactType.PRODUCT_PROFILE
@@ -95,6 +96,7 @@ class EventType(StrEnum):
 
     HOT_VIDEO_REGISTERED = "hot_video.registered"
     MEDIA_ASSET_STORED = "media_asset.stored"
+    PREPROCESS_RESULT_COMPLETED = "preprocess_result.completed"
     VIDEO_ANALYSIS_COMPLETED = "video_analysis.completed"
     SCRIPT_PATTERN_EXTRACTED = "script_pattern.extracted"
     SCRIPT_PATTERN_APPROVED = "script_pattern.approved"

@@ -14,6 +14,8 @@ name = 能力模块互不依赖
 type = independence
 modules =
     app.capabilities.echo
+    app.capabilities.preprocess_video
+    app.capabilities.ingest_hot_video
     app.capabilities.preprocess
     app.capabilities.understand
     app.capabilities.pattern_extract

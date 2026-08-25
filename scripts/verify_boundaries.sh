@@ -34,7 +34,7 @@ probes=(
     "app/capabilities/script_gen/_boundary_probe.py|import app.workflow|能力模块只能依赖 domain/adapters/assets"
     "app/adapters/llm/_boundary_probe.py|import app.platform|适配层只能依赖 domain"
     "app/api/_boundary_probe.py|import app.adapters.llm|API 层不得直连适配层"
-    "app/domain/script/_boundary_probe.py|import sqlalchemy|domain 层无框架依赖"
+    "app/domain/_boundary_probe.py|import sqlalchemy|domain 层无框架依赖"
 )
 
 for probe in "${probes[@]}"; do
