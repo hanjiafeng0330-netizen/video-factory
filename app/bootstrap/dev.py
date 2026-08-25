@@ -16,6 +16,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from app.adapters.asr.faster_whisper import FasterWhisperRecognizer
 from app.adapters.media.ffmpeg import FfmpegMediaTool
 from app.adapters.media.scene_detect import SceneDetectShotDetector
 from app.capabilities.registry import CapabilityDeps, CapabilityRegistry, build_capabilities
@@ -63,6 +64,8 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
                 audio=media,
                 shots=SceneDetectShotDetector(),
                 frames=media,
+                # 模型懒加载：首次转写时才下载，不拖慢进程启动。
+                recognizer=FasterWhisperRecognizer(),
             )
         ),
         artifacts=artifacts,

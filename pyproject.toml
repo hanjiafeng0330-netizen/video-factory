@@ -20,6 +20,11 @@ dependencies = [
     # 镜头切分。用 ContentDetector 比较 HSV 逐像素差异，
     # 而不是 ffmpeg 只看亮度的 scene 滤镜（见 app/adapters/media/scene_detect.py）。
     "scenedetect>=0.7",
+    # 本地语音转写。一期默认本地推理：热点分析需反复重跑，云 ASR 按时长计费会让
+    # 「重跑一次」变成要花钱的事，而设计文档 3.1 要求独立重跑。
+    "faster-whisper>=1.2",
+    # 繁简归一化。whisper 对中文常输出繁体，而大陆营销素材需要简体。
+    "opencc-python-reimplemented>=0.1.7",
 ]
 
 [project.optional-dependencies]
@@ -95,7 +100,7 @@ exclude = '(^|/)\._'
 
 [[tool.mypy.overrides]]
 # 这些库不带类型标注。只在此处放行，不放宽全局 strict。
-module = ["celery.*", "scenedetect.*"]
+module = ["celery.*", "scenedetect.*", "faster_whisper.*", "opencc.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

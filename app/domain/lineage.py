@@ -56,7 +56,9 @@ class RelationType(StrEnum):
 # 不会有任何症状——血缘看起来是完整的，只是关系名是错的，而这种错无法事后校验。
 _RELATION_BY_PAIR: dict[tuple[str, str], RelationType] = {
     ("hot_video", "preprocess_result"): RelationType.PRODUCES,
+    ("preprocess_result", "transcript"): RelationType.PRODUCES,
     ("preprocess_result", "video_analysis"): RelationType.PRODUCES,
+    ("transcript", "video_analysis"): RelationType.PRODUCES,
     ("hot_video", "video_analysis"): RelationType.PRODUCES,
     ("video_analysis", "script_pattern"): RelationType.ABSTRACTS,
     ("script_pattern", "marketing_script"): RelationType.GUIDES,

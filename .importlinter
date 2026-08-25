@@ -16,6 +16,7 @@ modules =
     app.capabilities.echo
     app.capabilities.preprocess_video
     app.capabilities.ingest_hot_video
+    app.capabilities.transcribe
     app.capabilities.preprocess
     app.capabilities.understand
     app.capabilities.pattern_extract

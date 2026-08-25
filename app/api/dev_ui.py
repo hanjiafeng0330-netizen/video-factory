@@ -27,7 +27,10 @@ from app.domain.assets import RightsStatus
 from app.domain.capability import CapabilityRequest
 from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.hot_video import SourcePlatform
+from app.domain.media import ShotList
 from app.domain.refs import ArtifactRef
+from app.domain.shot_script import build_shot_script, render_for_analysis
+from app.domain.transcript import Transcript
 
 router = APIRouter(prefix="/dev", tags=["dev-ui"])
 
@@ -52,6 +55,8 @@ async def analyze(
     registered_by: Annotated[str, Form()] = "dev_tester",
     selection_reason: Annotated[str, Form()] = "开发环境手动验收",
     shot_sensitivity: Annotated[float, Form()] = 0.5,
+    transcribe: Annotated[bool, Form()] = True,
+    language: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """上传一条视频，跑完入库 + 预处理，返回可视化所需的全部数据。"""
     container = container_of(request)
@@ -95,11 +100,45 @@ async def analyze(
             )
         )
         out_ref = pre_result.output_refs[0]
+
+        transcript_ref = None
+        transcript_notes: tuple[str, ...] = ()
+        transcript_error: str | None = None
+        if transcribe:
+            try:
+                asr = container.capabilities.get("audio_transcribe")
+                asr_result = await asr.execute(
+                    CapabilityRequest(
+                        input_refs=(out_ref,),
+                        parameters={"language": language or None},
+                        idempotency_key=f"dev-transcribe-{run_id}",
+                    )
+                )
+                transcript_ref = asr_result.output_refs[0]
+                transcript_notes = asr_result.notes
+            except CapabilityError as exc:
+                # 转写失败不应让整条链失败：镜头切分的结果仍然有价值，
+                # 而且「转写失败」和「确实无人说话」必须能区分开。
+                transcript_error = f"{exc.code}: {exc.message}"
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 
     body = dict(container.artifacts.get(out_ref).body)
     hot_body = dict(container.artifacts.get(hot_ref).body)
+
+    # 镜头脚本是 (预处理, 转写) 的纯函数计算视图，不落成产物——存下来就会出现
+    # 「上游改了但视图还是旧的」这种无声漂移。
+    transcript = (
+        container.artifacts.get(transcript_ref).body_as(Transcript)
+        if transcript_ref is not None
+        else None
+    )
+    script = build_shot_script(
+        ShotList.model_validate(body["shots"]),
+        transcript,
+        keyframe_asset_ids=tuple(body["keyframe_asset_ids"]),
+        keyframe_at_ms=tuple(body["keyframe_at_ms"]),
+    )
 
     return {
         "hot_video": {"ref": str(hot_ref), "body": hot_body, "notes": ingest_result.notes},
@@ -113,13 +152,50 @@ async def analyze(
             "truncated_keyframes": body["truncated_keyframes"],
             "notes": pre_result.notes,
         },
+        "transcript": {
+            "ref": str(transcript_ref) if transcript_ref else None,
+            "error": transcript_error,
+            "notes": transcript_notes,
+            "language": transcript.language if transcript else None,
+            "model": transcript.model_name if transcript else None,
+            "line_count": len(transcript.lines) if transcript else 0,
+        },
+        "shot_script": {
+            "has_transcript": script.has_transcript,
+            "speech_ratio": script.speech_ratio,
+            "silent_shot_count": script.silent_shot_count,
+            "entries": [
+                {
+                    "index": entry.index,
+                    "start_ms": entry.start_ms,
+                    "end_ms": entry.end_ms,
+                    "duration_ms": entry.duration_ms,
+                    "keyframe_asset_id": entry.keyframe_asset_id,
+                    "keyframe_at_ms": entry.keyframe_at_ms,
+                    "visual_description": entry.visual_description,
+                    "speech_ratio": entry.speech_ratio,
+                    "is_silent": entry.is_silent,
+                    "lines": [
+                        {
+                            "text": line.text,
+                            "start_ms": line.start_ms,
+                            "end_ms": line.end_ms,
+                            "spans_shot_boundary": line.spans_shot_boundary,
+                        }
+                        for line in entry.lines
+                    ],
+                }
+                for entry in script.entries
+            ],
+            "rendered": render_for_analysis(script),
+        },
         "lineage": [
             {
                 "ref": str(node.ref),
                 "depth": node.depth,
                 "relation": node.relation_from_child,
             }
-            for node in container.lineage.trace(out_ref)
+            for node in container.lineage.trace(transcript_ref or out_ref)
         ],
         "versions": {
             "hot_video": len(container.artifacts.history(hot_ref.type, hot_ref.id)),
