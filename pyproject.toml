@@ -1,0 +1,108 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "video-factory"
+version = "0.1.0"
+description = "营销视频智能生产系统"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "celery>=5.4",
+    "redis>=5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "import-linter>=2.1",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app", "workers"]
+
+# ---------------------------------------------------------------- ruff
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "workers", "tests"]
+# macOS 在 exFAT 卷上会为每个文件生成 AppleDouble 伴生文件（._foo.py），
+# 内容是二进制资源分叉，会被 lint 误判为非 UTF-8 源码。
+extend-exclude = ["._*", "**/._*"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",      # pycodestyle
+    "F",           # pyflakes
+    "I",           # isort
+    "N",           # pep8-naming
+    "UP",          # pyupgrade
+    "B",           # bugbear
+    "A",           # builtins shadowing
+    "C4",          # comprehensions
+    "DTZ",         # naive datetime
+    "T20",         # print
+    "SIM",         # simplify
+    "PTH",         # use pathlib
+    "RUF",
+    "ASYNC",
+    "S",           # bandit
+]
+ignore = [
+    "S101",        # assert 在测试中允许
+    # 本项目的注释、文档字符串与面向运营的错误文案一律用中文，全角标点是正常写法。
+    "RUF001", "RUF002", "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106"]
+"scripts/**" = ["T201"]
+# app.platform 与 stdlib platform 同名，但包内一律使用绝对导入，
+# `import platform` 仍解析到标准库，不存在实际遮蔽。
+"app/platform/**" = ["A005"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "workers"]
+
+# ---------------------------------------------------------------- mypy
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_no_return = true
+disallow_any_explicit = false
+plugins = ["pydantic.mypy"]
+files = ["app", "workers", "tests"]
+exclude = '(^|/)\._'
+
+[[tool.mypy.overrides]]
+module = ["celery.*"]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# ---------------------------------------------------------------- pytest
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q --strict-markers"
+markers = [
+    "integration: 需要 docker compose 本地栈",
+    "contract: 协议与边界契约测试",
+]

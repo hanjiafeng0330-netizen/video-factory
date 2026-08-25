@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# 工具缓存
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# macOS 在 exFAT 卷上生成的 AppleDouble 伴生文件与目录元数据
+._*
+.DS_Store
+.Spotlight-V100
+.Trashes
+.fseventsd
+.TemporaryItems
+
+# 本地配置与密钥
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# 本地媒体产物（不入库，走对象存储）
+/tmp/
+/local_assets/

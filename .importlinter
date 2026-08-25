@@ -1,0 +1,94 @@
+[importlinter]
+root_packages =
+    app
+    workers
+include_external_packages = True
+
+# ---------------------------------------------------------------------------
+# 约束 1：能力模块之间互不依赖
+# 能力模块只能通过标准产物（input_refs）连接，禁止直接调用彼此的内部实现。
+# 违反此约束会让「模块可独立开发、测试、部署和重跑」失效。
+# ---------------------------------------------------------------------------
+[importlinter:contract:capabilities-independent]
+name = 能力模块互不依赖
+type = independence
+modules =
+    app.capabilities.preprocess
+    app.capabilities.understand
+    app.capabilities.pattern_extract
+    app.capabilities.selling_point
+    app.capabilities.script_gen
+    app.capabilities.script_score
+    app.capabilities.storyboard
+    app.capabilities.video_gen
+    app.capabilities.quality_check
+
+# ---------------------------------------------------------------------------
+# 约束 2：能力模块只能依赖 domain / adapters / assets
+# 能力模块不得反向依赖编排层、API 层，也不得自行写血缘或读平台配置——
+# 血缘由框架钩子统一写入，配置由编排层通过参数注入。
+# ---------------------------------------------------------------------------
+[importlinter:contract:capabilities-downstream-only]
+name = 能力模块只能依赖 domain/adapters/assets
+type = forbidden
+source_modules =
+    app.capabilities
+forbidden_modules =
+    app.api
+    app.workflow
+    app.lineage
+    app.platform
+
+# ---------------------------------------------------------------------------
+# 约束 3：适配层只能依赖 domain
+# 第三方适配器必须是纯粹的协议翻译层，不感知业务流程与资产管理。
+# ---------------------------------------------------------------------------
+[importlinter:contract:adapters-domain-only]
+name = 适配层只能依赖 domain
+type = forbidden
+source_modules =
+    app.adapters
+forbidden_modules =
+    app.api
+    app.capabilities
+    app.workflow
+    app.assets
+    app.lineage
+    app.platform
+
+# ---------------------------------------------------------------------------
+# 约束 4：API 层不得直连适配层
+# API 只做鉴权、校验、聚合，所有第三方调用必须经由能力模块。
+# ---------------------------------------------------------------------------
+[importlinter:contract:api-not-adapters]
+name = API 层不得直连适配层
+type = forbidden
+source_modules =
+    app.api
+forbidden_modules =
+    app.adapters
+
+# ---------------------------------------------------------------------------
+# 约束 5：domain 是无框架依赖的纯领域层
+# 标准产物模型与领域规则必须能脱离 FastAPI / SQLAlchemy / Celery 独立测试。
+# Pydantic 是例外：产物 schema 直接由 Pydantic 承担。
+# ---------------------------------------------------------------------------
+[importlinter:contract:domain-framework-free]
+name = domain 层无框架依赖
+type = forbidden
+source_modules =
+    app.domain
+forbidden_modules =
+    app.api
+    app.capabilities
+    app.workflow
+    app.adapters
+    app.assets
+    app.lineage
+    app.platform
+    fastapi
+    starlette
+    sqlalchemy
+    alembic
+    celery
+    redis
