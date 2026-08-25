@@ -173,22 +173,31 @@ def test_entries_stay_contiguous() -> None:
 
 
 def test_keyframes_are_attached_per_shot() -> None:
+    """每镜头多帧（3 帧）都完整挂在对应镜头上。"""
     script = build_shot_script(
         shots(3000, duration=6000),
-        keyframe_asset_ids=("asset_a", "asset_b"),
-        keyframe_at_ms=(1500, 4500),
+        keyframes=(("asset_a1", "asset_a2", "asset_a3"), ("asset_b1", "asset_b2", "asset_b3")),
+        keyframe_timestamps=((750, 1500, 2250), (3750, 4500, 5250)),
     )
-    assert [e.keyframe_asset_id for e in script.entries] == ["asset_a", "asset_b"]
-    assert [e.keyframe_at_ms for e in script.entries] == [1500, 4500]
+    assert script.entries[0].keyframe_asset_ids == ("asset_a1", "asset_a2", "asset_a3")
+    assert script.entries[1].keyframe_asset_ids == ("asset_b1", "asset_b2", "asset_b3")
+    assert script.entries[0].keyframe_at_ms == (750, 1500, 2250)
+    assert script.entries[1].keyframe_at_ms == (3750, 4500, 5250)
 
 
-def test_missing_keyframes_leave_none_rather_than_shifting() -> None:
-    """关键帧触顶时后面的镜头留空，而不是把帧错位对到别的镜头上。
+def test_missing_keyframes_leave_empty_rather_than_shifting() -> None:
+    """关键帧被截断时后面的镜头留空，而不是把帧错位对到别的镜头上。
 
     错位会让模型看着 A 的画面读 B 的台词，而它仍会给出一份读起来合理的分析。
     """
-    script = build_shot_script(shots(2000, 4000, duration=6000), keyframe_asset_ids=("asset_a",))
-    assert [e.keyframe_asset_id for e in script.entries] == ["asset_a", None, None]
+    script = build_shot_script(
+        shots(2000, 4000, duration=6000),
+        keyframes=(("asset_a1", "asset_a2", "asset_a3"),),
+        keyframe_timestamps=((750, 1500, 2250),),
+    )
+    assert script.entries[0].keyframe_asset_ids == ("asset_a1", "asset_a2", "asset_a3")
+    assert script.entries[1].keyframe_asset_ids == ()
+    assert script.entries[2].keyframe_asset_ids == ()
 
 
 def test_no_line_is_silently_dropped() -> None:

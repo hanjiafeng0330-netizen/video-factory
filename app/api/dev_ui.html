@@ -90,6 +90,8 @@
     width: 92px; height: 164px; object-fit: cover;
     border-radius: 6px; border: 1px solid var(--line);
   }
+  .frames-strip { display: flex; gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+  .frames-strip img { width: 28px; height: 50px; border-radius: 3px; }
   .sentry .ph {
     width: 92px; height: 164px; border-radius: 6px; border: 1px dashed var(--line);
     display: flex; align-items: center; justify-content: center;
@@ -322,12 +324,17 @@ function render(d) {
 
   $('shotScript').innerHTML = ss.entries.map((e) => `
     <div class="sentry">
-      ${e.keyframe_asset_id
-        ? `<img src="/dev/assets/${e.keyframe_asset_id}" loading="lazy" alt="镜头 ${e.index}">`
-        : `<div class="ph">无关键帧</div>`}
+      <div class="frames-strip">
+        ${(e.keyframe_asset_ids || []).length === 0
+          ? `<div class="ph">无关键帧</div>`
+          : e.keyframe_asset_ids.map((id, j) =>
+              `<img src="/dev/assets/${id}" loading="lazy" alt="镜头${e.index}帧${j}">`
+            ).join('')}
+      </div>
       <div>
         <div class="meta">
           <b>镜头 ${e.index}</b> · ${ms(e.start_ms)} – ${ms(e.end_ms)} · ${e.duration_ms}ms
+          · ${(e.keyframe_asset_ids || []).length} 帧
           · 语音 <span class="bar"><i style="width:${(e.speech_ratio * 100).toFixed(0)}%"></i></span>
           ${(e.speech_ratio * 100).toFixed(0)}%
         </div>
@@ -341,13 +348,18 @@ function render(d) {
 
   $('rendered').textContent = ss.rendered;
 
-  $('frames').innerHTML = d.preprocess.keyframe_asset_ids.map((id, i) => `
+  const flatFrames = d.preprocess.keyframes.flatMap((frames, i) =>
+    frames.map((id, j) => ({ id, shot: i, frame: j, at_ms: d.preprocess.keyframe_timestamps[i][j] }))
+  );
+  $('frames').innerHTML = flatFrames.map((f) => `
     <div class="frame">
-      <img src="/dev/assets/${id}" loading="lazy" alt="镜头 ${i}">
-      <span>镜头 ${i} · ${ms(d.preprocess.keyframe_at_ms[i])}</span>
+      <img src="/dev/assets/${f.id}" loading="lazy" alt="镜头 ${f.shot} 帧 ${f.frame}">
+      <span>镜头 ${f.shot} · 帧 ${f.frame + 1} · ${ms(f.at_ms)}</span>
     </div>`).join('');
-  $('frameHint').textContent = d.preprocess.truncated_keyframes
-    ? `已达上限，只抽取了 ${d.preprocess.keyframe_asset_ids.length} 帧，实际有 ${shots.length} 个镜头。`
+  $('frameHint').textContent = d.preprocess.truncated_shots
+    ? `已达镜头采样上限，只抽取了 ${d.preprocess.keyframes.length} 个镜头的帧，实际有 ${shots.length} 个镜头。`
+    : `每个镜头抽 ${d.preprocess.frames_per_shot || 3} 帧（均匀分布在镜头内，避开首尾转场）；` +
+      `共 ${flatFrames.length} 帧。`;
     : `每个镜头一帧，取镜头中点而非首帧（首帧常落在转场上，抽出来是黑帧或糊图）。`;
 
   $('audio').innerHTML = d.preprocess.audio_asset_id

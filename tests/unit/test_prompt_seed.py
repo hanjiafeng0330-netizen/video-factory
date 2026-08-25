@@ -83,11 +83,20 @@ def test_narrative_prompt_forbids_popularity_attribution() -> None:
 
 def test_visual_prompt_forbids_inventing_brands() -> None:
     """设计文档 13.3 与 18 章：不允许模型虚构画面外的品牌与产品信息。"""
-    from app.prompts.seed import SHOT_VISUAL_BODY_V1
+    from app.prompts.seed import SHOT_VISUAL_BODY_V2
 
-    flat = _flat(SHOT_VISUAL_BODY_V1)
-    assert "不要写出图上没有出现的品牌名、产品名、成分名" in flat
+    flat = _flat(SHOT_VISUAL_BODY_V2)
+    assert "不要写出帧里没有出现的品牌名、产品名、成分名" in flat
     assert "不得把台词内容当作画面内容写进描述" in flat
+
+
+def test_visual_prompt_requires_composite_not_per_frame() -> None:
+    """v2 禁止逐帧分述：逐帧会把一个连贯动作切成几个独立事件，下游叙事还原会误读。"""
+    from app.prompts.seed import SHOT_VISUAL_BODY_V2
+
+    flat = _flat(SHOT_VISUAL_BODY_V2)
+    assert "综合描述，不逐帧分述" in flat
+    assert "motion" in flat  # v2 新增的字段
 
 
 def test_prompts_demand_evidence_and_separate_inference() -> None:

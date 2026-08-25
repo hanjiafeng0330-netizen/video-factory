@@ -136,8 +136,9 @@ async def analyze(
     script = build_shot_script(
         ShotList.model_validate(body["shots"]),
         transcript,
-        keyframe_asset_ids=tuple(body["keyframe_asset_ids"]),
-        keyframe_at_ms=tuple(body["keyframe_at_ms"]),
+        keyframes=tuple(tuple(f) for f in body["keyframes"]),
+        keyframe_timestamps=tuple(tuple(t) for t in body["keyframe_timestamps"]),
+        frames_per_shot=body.get("frames_per_shot", 0),
     )
 
     return {
@@ -147,9 +148,10 @@ async def analyze(
             "metadata": body["metadata"],
             "shots": body["shots"]["shots"],
             "audio_asset_id": body["audio_asset_id"],
-            "keyframe_asset_ids": body["keyframe_asset_ids"],
-            "keyframe_at_ms": body["keyframe_at_ms"],
-            "truncated_keyframes": body["truncated_keyframes"],
+            "keyframes": body["keyframes"],
+            "keyframe_timestamps": body["keyframe_timestamps"],
+            "frames_per_shot": body.get("frames_per_shot", 0),
+            "truncated_shots": body.get("truncated_shots", False),
             "notes": pre_result.notes,
         },
         "transcript": {
@@ -164,13 +166,14 @@ async def analyze(
             "has_transcript": script.has_transcript,
             "speech_ratio": script.speech_ratio,
             "silent_shot_count": script.silent_shot_count,
+            "frames_per_shot": body.get("frames_per_shot", 0),
             "entries": [
                 {
                     "index": entry.index,
                     "start_ms": entry.start_ms,
                     "end_ms": entry.end_ms,
                     "duration_ms": entry.duration_ms,
-                    "keyframe_asset_id": entry.keyframe_asset_id,
+                    "keyframe_asset_ids": entry.keyframe_asset_ids,
                     "keyframe_at_ms": entry.keyframe_at_ms,
                     "visual_description": entry.visual_description,
                     "speech_ratio": entry.speech_ratio,

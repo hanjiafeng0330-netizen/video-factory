@@ -45,10 +45,14 @@ class PreprocessParameters(BaseModel):
     shot_sensitivity: float = Field(default=0.5, ge=0.05, le=0.95)
     """镜头切分灵敏度，越大切得越碎。0.5 对应检测库的默认值，是已验证可用的点。"""
 
+    frames_per_shot: int = Field(default=3, ge=1, le=10)
+    """每个镜头抽几帧用于视觉理解。3 帧（首/中/尾）是默认，能覆盖动作起止。
+    详细策略见 docs/镜头切分策略.md 第 6 节。"""
+
     extract_audio: bool = True
     extract_keyframes: bool = True
-    max_keyframes: int = Field(default=40, ge=1, le=200)
-    """关键帧上限。防止一条被切成几百个镜头的视频把存储和后续视觉理解成本放大。"""
+    max_shots_to_sample: int = Field(default=40, ge=1, le=200)
+    """最多抽多少镜头的关键帧。超过则截断并置 truncated_keyframes=True。"""
 
 
 class PreprocessResult(BaseModel):
@@ -59,11 +63,15 @@ class PreprocessResult(BaseModel):
     metadata: MediaMetadata
     shots: ShotList
     audio_asset_id: str | None
-    keyframe_asset_ids: tuple[str, ...]
-    keyframe_at_ms: tuple[int, ...]
-    truncated_keyframes: bool
-    """镜头数超过 max_keyframes 时为真。留个显式标记，免得下游把「只有 40 帧」
-    误当成「只有 40 个镜头」。"""
+    keyframes: tuple[tuple[str, ...], ...]
+    """每镜头的关键帧资产 id。`keyframes[i]` 是第 i 个镜头的 N 帧（按时间排序）。"""
+    keyframe_timestamps: tuple[tuple[int, ...], ...]
+    """与 keyframes 平行：`keyframe_timestamps[i][j]` 是第 i 镜头第 j 帧的时间。"""
+    frames_per_shot: int
+    """实际每镜头抽的帧数。`frames_per_shot` 字段让下游能校验「我拿到的帧数就是抽帧
+    参数要求的那个数」，而不是靠猜。"""
+    truncated_shots: bool
+    """镜头数超过 max_shots_to_sample 时为真。"""
 
 
 class PreprocessVideoCapability(Capability[PreprocessParameters]):
@@ -132,7 +140,7 @@ class PreprocessVideoCapability(Capability[PreprocessParameters]):
             audio_asset_id = self._maybe_extract_audio(
                 source, work, asset_id, metadata, enabled=params.extract_audio
             )
-            keyframe_ids, keyframe_ms, truncated = self._maybe_extract_keyframes(
+            keyframes, keyframe_times, frames_per_shot, truncated = self._maybe_extract_keyframes(
                 source, work, asset_id, shot_list, params
             )
 
@@ -140,9 +148,10 @@ class PreprocessVideoCapability(Capability[PreprocessParameters]):
             metadata=metadata,
             shots=shot_list,
             audio_asset_id=audio_asset_id,
-            keyframe_asset_ids=keyframe_ids,
-            keyframe_at_ms=keyframe_ms,
-            truncated_keyframes=truncated,
+            keyframes=keyframes,
+            keyframe_timestamps=keyframe_times,
+            frames_per_shot=frames_per_shot,
+            truncated_shots=truncated,
         )
 
         version = self._artifacts.create_version(
@@ -155,16 +164,18 @@ class PreprocessVideoCapability(Capability[PreprocessParameters]):
             status=ArtifactStatus.READY,
         )
 
+        total_keyframes = sum(len(shot_frames) for shot_frames in keyframes)
         return CapabilityResult(
             output_refs=(version.ref,),
             metrics={
                 "shot_count": float(shot_list.count),
                 "duration_ms": float(metadata.duration_ms),
-                "keyframe_count": float(len(keyframe_ids)),
+                "keyframe_count": float(total_keyframes),
+                "frames_per_shot": float(frames_per_shot),
             },
             notes=(
                 f"{metadata.width}x{metadata.height} {metadata.aspect_ratio} "
-                f"{metadata.duration_ms}ms，切分为 {shot_list.count} 个镜头",
+                f"{metadata.duration_ms}ms，{shot_list.count} 个镜头 × {frames_per_shot} 帧/镜头",
             ),
         )
 
@@ -196,29 +207,48 @@ class PreprocessVideoCapability(Capability[PreprocessParameters]):
         source_asset_id: str,
         shot_list: ShotList,
         params: PreprocessParameters,
-    ) -> tuple[tuple[str, ...], tuple[int, ...], bool]:
+    ) -> tuple[tuple[tuple[str, ...], ...], tuple[tuple[int, ...], ...], int, bool]:
+        """每个镜头均匀抽 frames_per_shot 帧。
+
+        返回 (每镜头帧资产 id, 每镜头时间戳, 实际帧数, 是否截断镜头采样)。
+        """
         if not params.extract_keyframes:
-            return (), (), False
+            return (), (), params.frames_per_shot, False
 
-        selected = shot_list.shots[: params.max_keyframes]
-        asset_ids: list[str] = []
-        timestamps: list[int] = []
+        selected = shot_list.shots[: params.max_shots_to_sample]
+        per_shot_ids: list[tuple[str, ...]] = []
+        per_shot_times: list[tuple[int, ...]] = []
+
         for shot in selected:
-            # 取镜头中点而非首帧：首帧常落在转场上，抽出来是黑帧或叠化的糊图。
-            at_ms = shot.midpoint_ms
-            frame_path = self._frames.extract_frame(
-                source, work / f"frame_{shot.index:04d}.jpg", at_ms=at_ms
+            # 把镜头等分成 N 段，取每段中点。比「首/中/尾」好，因为首帧和尾帧
+            # 常落在转场上，抽出来是黑帧或叠化的糊图。
+            sample_times = tuple(
+                shot.start_ms + (2 * i + 1) * shot.duration_ms // (2 * params.frames_per_shot)
+                for i in range(params.frames_per_shot)
             )
-            asset_ids.append(
-                self._assets.put(
-                    frame_path,
-                    kind=AssetKind.IMAGE,
-                    origin=AssetOrigin.DERIVED,
-                    mime_type="image/jpeg",
-                    created_by=self.name,
-                    derived_from=source_asset_id,
-                ).id
-            )
-            timestamps.append(at_ms)
+            shot_asset_ids: list[str] = []
+            for j, at_ms in enumerate(sample_times):
+                frame_path = self._frames.extract_frame(
+                    source,
+                    work / f"frame_{shot.index:04d}_{j}.jpg",
+                    at_ms=at_ms,
+                )
+                shot_asset_ids.append(
+                    self._assets.put(
+                        frame_path,
+                        kind=AssetKind.IMAGE,
+                        origin=AssetOrigin.DERIVED,
+                        mime_type="image/jpeg",
+                        created_by=self.name,
+                        derived_from=source_asset_id,
+                    ).id
+                )
+            per_shot_ids.append(tuple(shot_asset_ids))
+            per_shot_times.append(sample_times)
 
-        return tuple(asset_ids), tuple(timestamps), shot_list.count > params.max_keyframes
+        return (
+            tuple(per_shot_ids),
+            tuple(per_shot_times),
+            params.frames_per_shot,
+            shot_list.count > params.max_shots_to_sample,
+        )

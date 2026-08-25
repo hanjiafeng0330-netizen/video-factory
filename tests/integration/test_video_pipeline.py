@@ -372,38 +372,47 @@ async def test_audio_becomes_a_derived_asset(pipeline: Pipeline, sample_video: P
 
 
 async def test_keyframes_are_extracted_per_shot(pipeline: Pipeline, sample_video: Path) -> None:
+    """每个镜头抽 N 帧（默认 3 帧），结构是「每镜头 N 帧」的二维数组。"""
     _, out_ref = await run_chain(pipeline, sample_video)
     body = read_result(pipeline, out_ref)
 
-    assert len(body.keyframe_asset_ids) == body.shots.count
-    assert len(body.keyframe_at_ms) == body.shots.count
-    for asset_id in body.keyframe_asset_ids:
-        frame = pipeline.assets.get(asset_id)
-        assert frame.bucket is BucketKind.GENERATED
-        assert frame.size_bytes > 0
-        # 派生物不单独标授权，权限由血缘上的原始资产决定
-        assert frame.rights_cleared is True
+    assert len(body.keyframes) == body.shots.count
+    assert body.frames_per_shot == 3
+    for shot_frames in body.keyframes:
+        assert len(shot_frames) == body.frames_per_shot
+        for asset_id in shot_frames:
+            frame = pipeline.assets.get(asset_id)
+            assert frame.bucket is BucketKind.GENERATED
+            assert frame.size_bytes > 0
+            # 派生物不单独标授权，权限由血缘上的原始资产决定
+            assert frame.rights_cleared is True
 
 
-async def test_keyframes_are_taken_at_shot_midpoints(
+async def test_keyframes_are_evenly_spaced_within_shot(
     pipeline: Pipeline, sample_video: Path
 ) -> None:
-    """首帧常落在转场上，抽出来是黑帧或叠化的糊图。"""
+    """把镜头等分成 N 段，取每段中点。比「首/中/尾」好，因为首尾帧常落在转场上。"""
     _, out_ref = await run_chain(pipeline, sample_video)
     body = read_result(pipeline, out_ref)
 
-    for shot, at_ms in zip(body.shots.shots, body.keyframe_at_ms, strict=True):
-        assert at_ms == shot.midpoint_ms
-        assert shot.start_ms < at_ms < shot.end_ms
+    for shot, times in zip(body.shots.shots, body.keyframe_timestamps, strict=True):
+        assert len(times) == body.frames_per_shot
+        for t in times:
+            assert shot.start_ms < t < shot.end_ms
+        # 时间应递增
+        import itertools
+
+        for prev, curr in itertools.pairwise(times):
+            assert curr > prev
 
 
-async def test_keyframe_cap_is_flagged(pipeline: Pipeline, sample_video: Path) -> None:
-    """上限生效时留显式标记，免得下游把「只有 2 帧」误当成「只有 2 个镜头」。"""
-    _, out_ref = await run_chain(pipeline, sample_video, max_keyframes=2)
+async def test_shot_sample_cap_is_flagged(pipeline: Pipeline, sample_video: Path) -> None:
+    """上限截断抽帧的镜头数时留显式标记，免得下游误以为没切帧。"""
+    _, out_ref = await run_chain(pipeline, sample_video, max_shots_to_sample=2)
     body = read_result(pipeline, out_ref)
 
-    assert len(body.keyframe_asset_ids) == 2
-    assert body.truncated_keyframes is True
+    assert len(body.keyframes) == 2
+    assert body.truncated_shots is True
     assert body.shots.count > 2
 
 

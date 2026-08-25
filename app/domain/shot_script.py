@@ -73,14 +73,12 @@ class ShotScriptEntry(BaseModel):
     index: Annotated[int, Field(ge=0)]
     start_ms: Annotated[int, Field(ge=0)]
     end_ms: Annotated[int, Field(ge=1)]
-    keyframe_asset_id: str | None = None
-    keyframe_at_ms: int | None = None
+    keyframe_asset_ids: tuple[str, ...] = ()
+    """该镜头的所有关键帧资产 id，按时间排序。通常 3 帧（首/中/尾附近）。"""
+    keyframe_at_ms: tuple[int, ...] = ()
+    """与 keyframe_asset_ids 平行的时间戳。"""
     visual_description: str | None = None
-    """画面描述。由视觉理解（T3-3）填充。
-
-    留成可空字段而不是等视觉理解做完再建这一层，是为了让「镜头与台词的对齐」这件
-    事能独立验收——对齐错了和画面描述错了是两类问题，混在一起无法分辨。
-    """
+    """画面描述。由视觉理解（T3-3）填充，基于该镜头全部关键帧综合而成。"""
 
     lines: tuple[ShotLine, ...] = ()
     speech_ms: Annotated[int, Field(ge=0)] = 0
@@ -195,12 +193,15 @@ def build_shot_script(
     shots: ShotList,
     transcript: Transcript | None = None,
     *,
-    keyframe_asset_ids: tuple[str, ...] = (),
-    keyframe_at_ms: tuple[int, ...] = (),
+    keyframes: tuple[tuple[str, ...], ...] = (),
+    keyframe_timestamps: tuple[tuple[int, ...], ...] = (),
+    frames_per_shot: int = 0,
 ) -> ShotScript:
     """把镜头、关键帧与转写对齐成镜头脚本。
 
     纯函数：同样的输入永远得到同样的输出，因此不需要作为产物存储。
+
+    每个镜头带多帧（通常 3 帧）时，`keyframes[i]` 是第 i 镜头的 N 帧资产 id。
     """
     buckets: dict[int, list[ShotLine]] = {shot.index: [] for shot in shots.shots}
     speech: dict[int, int] = {shot.index: 0 for shot in shots.shots}
@@ -229,11 +230,9 @@ def build_shot_script(
             index=shot.index,
             start_ms=shot.start_ms,
             end_ms=shot.end_ms,
-            keyframe_asset_id=(
-                keyframe_asset_ids[shot.index] if shot.index < len(keyframe_asset_ids) else None
-            ),
+            keyframe_asset_ids=(keyframes[shot.index] if shot.index < len(keyframes) else ()),
             keyframe_at_ms=(
-                keyframe_at_ms[shot.index] if shot.index < len(keyframe_at_ms) else None
+                keyframe_timestamps[shot.index] if shot.index < len(keyframe_timestamps) else ()
             ),
             lines=tuple(buckets[shot.index]),
             speech_ms=min(speech[shot.index], shot.duration_ms),
