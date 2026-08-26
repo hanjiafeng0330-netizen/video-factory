@@ -325,6 +325,73 @@ async def step3_video_understand(
 
 
 # ============================================================================
+# 提示词配置接口
+# ============================================================================
+@router.get("/prompts")
+async def list_prompts(request: Request) -> dict[str, Any]:
+    """列出所有提示词及其版本历史。"""
+    container = container_of(request)
+    prompts_data = []
+    for template in container.prompts.templates():
+        versions = []
+        for v in container.prompts.history(template.key):
+            versions.append({
+                "version": v.version,
+                "status": v.status,
+                "body": v.body,
+                "change_note": v.change_note,
+                "author": v.author,
+                "created_at": v.created_at.isoformat(),
+                "activated_at": v.activated_at.isoformat() if v.activated_at else None,
+            })
+        prompts_data.append({
+            "key": template.key,
+            "stage": template.stage,
+            "purpose": template.purpose,
+            "variables": list(template.variables),
+            "versions": versions,
+        })
+    return {"prompts": prompts_data}
+
+
+@router.post("/prompts/{prompt_key}/activate")
+async def activate_prompt(
+    prompt_key: str,
+    request: Request,
+    version: Annotated[int, Form()],
+    actor: Annotated[str, Form()] = "web_user",
+) -> dict[str, Any]:
+    """激活指定版本的提示词。"""
+    container = container_of(request)
+    activated = container.prompts.activate(prompt_key, version, actor=actor)
+    return {
+        "key": prompt_key,
+        "version": activated.version,
+        "status": activated.status,
+        "activated_at": activated.activated_at.isoformat() if activated.activated_at else None,
+    }
+
+
+@router.post("/prompts/add_version")
+async def add_prompt_version(
+    request: Request,
+    key: Annotated[str, Form()],
+    body: Annotated[str, Form()],
+    change_note: Annotated[str, Form()],
+    author: Annotated[str, Form()] = "web_user",
+) -> dict[str, Any]:
+    """添加新版本的提示词（草案状态）。"""
+    container = container_of(request)
+    version = container.prompts.add_version(key, body, change_note=change_note, author=author)
+    return {
+        "key": key,
+        "version": version.version,
+        "status": version.status,
+        "change_note": version.change_note,
+    }
+
+
+# ============================================================================
 # 辅助接口
 # ============================================================================
 @router.get("/assets/{asset_id}")

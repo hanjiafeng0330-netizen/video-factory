@@ -146,10 +146,15 @@
 <body>
 <header>
   <h1>营销视频生产系统</h1>
-  <span class="badge">步骤化分析</span>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="badge" id="nav-analysis" style="cursor:pointer;" onclick="showPage('analysis')">步骤化分析</span>
+    <span class="badge" id="nav-prompts" style="cursor:pointer;background:#1d2a3a;" onclick="showPage('prompts')">提示词配置</span>
+  </div>
   <span class="hint" style="margin:0">内存仓储，重启即清空</span>
 </header>
 
+<!-- 分析页面 -->
+<div id="page-analysis">
 <main>
   <!-- 步骤指示器 -->
   <div class="steps">
@@ -261,6 +266,18 @@
     <div id="result3" class="hidden"></div>
   </div>
 </main>
+</div>
+
+<!-- 提示词配置页面 -->
+<div id="page-prompts" style="display:none;">
+<main>
+  <div class="panel">
+    <h2>提示词配置</h2>
+    <p class="hint">管理各环节的提示词模板。修改后需激活才能生效。</p>
+  </div>
+  <div id="prompts-list"></div>
+</main>
+</div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -279,6 +296,123 @@ function showStep(n) {
   document.querySelector(`.step[data-step="${n}"]`).classList.add('active');
   document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
   $(`step${n}`).classList.add('active');
+}
+
+// 切换页面
+function showPage(page) {
+  if (page === 'analysis') {
+    $('page-analysis').style.display = 'block';
+    $('page-prompts').style.display = 'none';
+    $('nav-analysis').style.background = '#1d2a3a';
+    $('nav-prompts').style.background = '#2a2113';
+  } else if (page === 'prompts') {
+    $('page-analysis').style.display = 'none';
+    $('page-prompts').style.display = 'block';
+    $('nav-analysis').style.background = '#2a2113';
+    $('nav-prompts').style.background = '#1d2a3a';
+    loadPrompts();
+  }
+}
+
+// 加载提示词列表
+async function loadPrompts() {
+  try {
+    const resp = await fetch('/dev/prompts');
+    const data = await resp.json();
+    renderPrompts(data.prompts);
+  } catch (err) {
+    $('prompts-list').innerHTML = `<div class="err">加载失败：${err}</div>`;
+  }
+}
+
+// 渲染提示词列表
+function renderPrompts(prompts) {
+  $('prompts-list').innerHTML = prompts.map(p => `
+    <div class="panel">
+      <h2>${p.key} <span style="font-size:11px;color:var(--dim);font-weight:normal;">(${p.stage})</span></h2>
+      <dl class="kv">
+        <dt>用途</dt><dd>${p.purpose}</dd>
+        <dt>变量</dt><dd>${p.variables.join(', ') || '无'}</dd>
+      </dl>
+      <h3 style="font-size:12px;margin:16px 0 8px;color:var(--dim);">版本历史</h3>
+      ${p.versions.map(v => `
+        <div style="padding:10px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px;${v.status === 'active' ? 'background:#1a2a1a;' : ''}">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <b>v${v.version}</b>
+              <span class="tag" style="margin-left:8px;${v.status === 'active' ? 'background:var(--ok);color:#000;' : ''}">${v.status}</span>
+            </div>
+            <div style="font-size:11px;color:var(--dim);">
+              ${v.author} · ${new Date(v.created_at).toLocaleString()}
+            </div>
+          </div>
+          ${v.change_note ? `<div style="font-size:12px;margin-top:6px;color:var(--dim);">变更：${v.change_note}</div>` : ''}
+          <pre style="margin-top:8px;white-space:pre-wrap;">${escapeHtml(v.body)}</pre>
+          ${v.status !== 'active' ? `
+            <button class="secondary" style="margin-top:8px;padding:4px 10px;font-size:11px;"
+                    onclick="activatePrompt('${p.key}', ${v.version})">激活此版本</button>
+          ` : ''}
+        </div>
+      `).join('')}
+      <div style="margin-top:12px;">
+        <textarea id="new-body-${p.key}" placeholder="输入新版本提示词内容..."
+                  style="width:100%;min-height:100px;background:#10131a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:inherit;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <input type="text" id="new-note-${p.key}" placeholder="变更说明..."
+                 style="flex:1;background:#10131a;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px;font-size:12px;">
+          <button class="secondary" style="padding:6px 12px;font-size:11px;"
+                  onclick="addPromptVersion('${p.key}')">添加新版本</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// 激活提示词
+async function activatePrompt(key, version) {
+  if (!confirm(`确定激活 ${key} 的 v${version} 版本？`)) return;
+  try {
+    const fd = new FormData();
+    fd.append('version', version);
+    fd.append('actor', 'web_user');
+    const resp = await fetch(`/dev/prompts/${key}/activate`, { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (resp.ok) {
+      alert(`已激活 ${key} v${data.version}`);
+      loadPrompts();
+    } else {
+      alert(`激活失败：${data.detail || JSON.stringify(data)}`);
+    }
+  } catch (err) {
+    alert(`错误：${err}`);
+  }
+}
+
+// 添加新版本
+async function addPromptVersion(key) {
+  const body = $(`new-body-${key}`).value;
+  const note = $(`new-note-${key}`).value;
+  if (!body) { alert('请输入提示词内容'); return; }
+  if (!note) { alert('请输入变更说明'); return; }
+  try {
+    const fd = new FormData();
+    fd.append('key', key);
+    fd.append('body', body);
+    fd.append('change_note', note);
+    fd.append('author', 'web_user');
+    const resp = await fetch('/dev/prompts/add_version', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (resp.ok) {
+      alert(`已添加 ${key} v${data.version}（草案）`);
+      $(`new-body-${key}`).value = '';
+      $(`new-note-${key}`).value = '';
+      loadPrompts();
+    } else {
+      alert(`添加失败：${data.detail || JSON.stringify(data)}`);
+    }
+  } catch (err) {
+    alert(`错误：${err}`);
+  }
 }
 
 // 标记步骤完成
