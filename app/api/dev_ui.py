@@ -1,14 +1,16 @@
 """开发用测试页的后端 - 步骤化重构版。
 
-把视频分析流程拆成4个独立步骤，每步可单独触发和重跑：
+把视频分析流程拆成3个独立步骤，每步可单独触发和重跑：
 1. 上传视频
-2. 预处理（镜头切分 + 关键帧提取）
-3. 语音转写（可选）
-4. 视频理解（可选，调用LLM）
+2. 预处理（镜头切分 + 关键帧提取 + 语音转写）
+3. 视频理解（可选，调用LLM）
 """
 
 from __future__ import annotations
 
+import csv
+import io
+import json
 import shutil
 import tempfile
 import uuid
@@ -16,7 +18,8 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
+from starlette.responses import StreamingResponse
 
 from app.api.deps import container_of
 from app.domain.assets import RightsStatus
@@ -31,11 +34,135 @@ router = APIRouter(prefix="/dev", tags=["dev-ui"])
 
 _PAGE = Path(__file__).parent / "dev_ui.html"
 _MAX_UPLOAD_BYTES = 500 * 1024 * 1024
+_ANALYSES_DIR = Path(".local_analyses")  # 分析结果持久化目录
+
+
+def _init_analyses_dir():
+    """初始化分析结果目录。"""
+    _ANALYSES_DIR.mkdir(exist_ok=True)
+
+
+def _save_analysis(analysis_id: str, data: dict[str, Any]) -> Path:
+    """保存分析结果到磁盘。"""
+    _init_analyses_dir()
+    path = _ANALYSES_DIR / f"{analysis_id}.json"
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+    return path
+
+
+def _load_analysis(analysis_id: str) -> dict[str, Any] | None:
+    """加载分析结果。"""
+    path = _ANALYSES_DIR / f"{analysis_id}.json"
+    if path.exists():
+        return json.loads(path.read_text())
+    return None
+
+
+def _list_analyses() -> list[dict[str, Any]]:
+    """列出所有分析结果。"""
+    _init_analyses_dir()
+    results = []
+    for path in sorted(_ANALYSES_DIR.glob("*.json"), reverse=True):
+        # 跳过 macOS 的 AppleDouble 文件
+        if path.name.startswith("._"):
+            continue
+        data = json.loads(path.read_text())
+        results.append({
+            "id": path.stem,
+            "created_at": data.get("created_at", ""),
+            "video_name": data.get("video_name", ""),
+            "hot_video_ref": data.get("hot_video", {}).get("ref", ""),
+            "shot_count": len(data.get("shot_script", {}).get("entries", [])),
+            "has_transcript": data.get("shot_script", {}).get("has_transcript", False),
+            "has_visual_description": data.get("video_understand", {}).get("ref") is not None,
+        })
+    return results
 
 
 @router.get("", response_class=HTMLResponse)
 async def page() -> HTMLResponse:
     return HTMLResponse(_PAGE.read_text(encoding="utf-8"))
+
+
+# ============================================================================
+# 分析历史与导出
+# ============================================================================
+@router.get("/analyses")
+async def list_analyses(request: Request) -> list[dict[str, Any]]:
+    """列出所有分析结果。"""
+    return _list_analyses()
+
+
+@router.get("/analyses/{analysis_id}")
+async def get_analysis(analysis_id: str, request: Request) -> dict[str, Any]:
+    """获取指定分析的详细数据。"""
+    data = _load_analysis(analysis_id)
+    if data is None:
+        raise CapabilityError(ErrorCode.ARTIFACT_NOT_FOUND, f"分析结果不存在：{analysis_id}")
+    return data
+
+
+@router.get("/analyses/{analysis_id}/export")
+async def export_analysis_csv(analysis_id: str, request: Request) -> Response:
+    """导出分析结果为 CSV。"""
+    data = _load_analysis(analysis_id)
+    if data is None:
+        raise CapabilityError(ErrorCode.ARTIFACT_NOT_FOUND, f"分析结果不存在：{analysis_id}")
+
+    shot_script = data.get("shot_script", {})
+    entries = shot_script.get("entries", [])
+
+    # 生成 CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # 表头
+    writer.writerow([
+        "镜头序号", "开始时间(ms)", "结束时间(ms)", "时长(ms)",
+        "画面描述", "台词", "台词开始(ms)", "台词结束(ms)", "跨镜头",
+        "关键帧数", "语音占比", "是否静音",
+    ])
+
+    # 数据行
+    for entry in entries:
+        lines = entry.get("lines", [])
+        for i, line in enumerate(lines):
+            writer.writerow([
+                entry["index"],
+                entry["start_ms"],
+                entry["end_ms"],
+                entry["duration_ms"],
+                entry.get("visual_description", ""),
+                line.get("text", ""),
+                line.get("start_ms", ""),
+                line.get("end_ms", ""),
+                "是" if line.get("spans_shot_boundary") else "否",
+                len(entry.get("keyframe_asset_ids", [])),
+                f"{entry.get('speech_ratio', 0):.0%}",
+                "是" if entry.get("is_silent") else "否",
+            ])
+        # 如果没有台词，也输出一行
+        if not lines:
+            writer.writerow([
+                entry["index"],
+                entry["start_ms"],
+                entry["end_ms"],
+                entry["duration_ms"],
+                entry.get("visual_description", ""),
+                "", "", "", "",
+                len(entry.get("keyframe_asset_ids", [])),
+                f"{entry.get('speech_ratio', 0):.0%}",
+                "是" if entry.get("is_silent") else "否",
+            ])
+
+    csv_content = output.getvalue()
+    return Response(
+        content=csv_content.encode("utf-8-sig"),  # utf-8-sig 让 Excel 正确识别中文
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="analysis_{analysis_id}.csv"'
+        },
+    )
 
 
 # ============================================================================
@@ -158,6 +285,9 @@ async def step2_preprocess(
     )
 
     result = {
+        "analysis_id": run_id,
+        "created_at": __import__("datetime").datetime.now().isoformat(),
+        "video_name": str(hot_ref.id),
         "preprocess": {
             "ref": str(out_ref),
             "metadata": body["metadata"],
@@ -207,7 +337,12 @@ async def step2_preprocess(
             ],
             "rendered": render_for_analysis(script),
         },
+        "hot_video": {"ref": str(hot_ref)},
+        "video_understand": {"ref": None},
     }
+
+    # 保存分析结果
+    _save_analysis(run_id, result)
 
     return result
 
@@ -219,6 +354,7 @@ async def step2_preprocess(
 async def step3_video_understand(
     request: Request,
     preprocess_ref: Annotated[str, Form()],
+    analysis_id: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤3：视频理解，调用LLM分析每个镜头。"""
     container = container_of(request)
@@ -258,6 +394,9 @@ async def step3_video_understand(
     # 获取原始预处理产物，以获取镜头/关键帧/时间戳信息
     pre_body = container.artifacts.get(pre_ref).body
 
+    # 使用传入的 analysis_id 或从预处理产物中获取
+    analysis_id = analysis_id or pre_body.get("analysis_id", "")
+
     # 查找是否有转写产物（可能被步骤2创建）
     transcript = None
     try:
@@ -284,6 +423,7 @@ async def step3_video_understand(
             object.__setattr__(entry, 'visual_description', vu_entry.visual_description)
 
     return {
+        "analysis_id": analysis_id,
         "video_understand": {
             "ref": str(video_understand_ref),
             "total_shots": len(script.entries),
@@ -296,6 +436,7 @@ async def step3_video_understand(
             "has_transcript": script.has_transcript,
             "speech_ratio": script.speech_ratio,
             "silent_shot_count": script.silent_shot_count,
+            "frames_per_shot": pre_body.get("frames_per_shot", 0),
             "entries": [
                 {
                     "index": entry.index,
@@ -322,6 +463,21 @@ async def step3_video_understand(
             "rendered": render_for_analysis(script),
         },
     }
+
+    # 更新已保存的分析结果
+    if analysis_id:
+        saved_data = _load_analysis(analysis_id)
+        if saved_data:
+            saved_data["video_understand"] = {
+                "ref": str(video_understand_ref),
+                "total_shots": len(script.entries),
+                "shots_with_visual_description": sum(1 for e in script.entries if e.visual_description),
+                "notes": list(vu_result.notes),
+            }
+            saved_data["shot_script"] = result["shot_script"]
+            _save_analysis(analysis_id, saved_data)
+
+    return result
 
 
 # ============================================================================

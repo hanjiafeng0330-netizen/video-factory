@@ -215,6 +215,15 @@
         </div>
       </form>
     </div>
+
+    <!-- 分析历史 -->
+    <div class="panel" style="margin-top:20px;">
+      <h2>分析历史</h2>
+      <div id="analysis-history">
+        <p class="hint">加载中...</p>
+      </div>
+    </div>
+
     <div id="result1" class="hidden"></div>
   </div>
 
@@ -305,12 +314,87 @@ function showPage(page) {
     $('page-prompts').style.display = 'none';
     $('nav-analysis').style.background = '#1d2a3a';
     $('nav-prompts').style.background = '#2a2113';
+    loadAnalysisHistory();
   } else if (page === 'prompts') {
     $('page-analysis').style.display = 'none';
     $('page-prompts').style.display = 'block';
     $('nav-analysis').style.background = '#2a2113';
     $('nav-prompts').style.background = '#1d2a3a';
     loadPrompts();
+  }
+}
+
+// 加载分析历史
+async function loadAnalysisHistory() {
+  try {
+    const resp = await fetch('/dev/analyses');
+    const analyses = await resp.json();
+    renderAnalysisHistory(analyses);
+  } catch (err) {
+    $('analysis-history').innerHTML = `<div class="err">加载失败：${err}</div>`;
+  }
+}
+
+// 渲染分析历史
+function renderAnalysisHistory(analyses) {
+  if (analyses.length === 0) {
+    $('analysis-history').innerHTML = '<p class="hint">暂无分析记录</p>';
+    return;
+  }
+  $('analysis-history').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>视频</th>
+          <th>镜头数</th>
+          <th>转写</th>
+          <th>画面描述</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${analyses.map(a => `
+          <tr>
+            <td style="font-size:11px;">${new Date(a.created_at).toLocaleString()}</td>
+            <td style="font-size:11px;">${a.video_name.substring(0, 20)}...</td>
+            <td>${a.shot_count}</td>
+            <td>${a.has_transcript ? '✓' : '-'}</td>
+            <td>${a.has_visual_description ? '✓' : '-'}</td>
+            <td>
+              <button class="secondary" style="padding:3px 8px;font-size:11px;margin-right:4px;"
+                      onclick="viewAnalysis('${a.id}')">查看</button>
+              <a href="/dev/analyses/${a.id}/export" style="text-decoration:none;">
+                <button class="secondary" style="padding:3px 8px;font-size:11px;">导出CSV</button>
+              </a>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// 查看分析详情
+async function viewAnalysis(analysisId) {
+  try {
+    const resp = await fetch(`/dev/analyses/${analysisId}`);
+    const data = await resp.json();
+    // 恢复到分析结果状态
+    state.hot_video = { ref: data.hot_video.ref };
+    state.preprocess = data.preprocess;
+    state.shot_script = data.shot_script;
+    if (data.video_understand && data.video_understand.ref) {
+      state.video_understand = data.video_understand;
+    }
+    // 显示结果
+    renderStep2Result(data);
+    if (data.video_understand && data.video_understand.ref) {
+      renderStep3Result(data);
+    }
+    showStep(2);
+  } catch (err) {
+    alert(`加载失败：${err}`);
   }
 }
 
@@ -484,10 +568,12 @@ $('form2').addEventListener('submit', async (e) => {
       $('result2').classList.remove('hidden');
       return;
     }
+    state.analysis_id = data.analysis_id;
     state.preprocess = data.preprocess;
     state.shot_script = data.shot_script;
     markStepDone(2);
     renderStep2Result(data);
+    loadAnalysisHistory();  // 刷新历史列表
     showStep(3);
   } catch (err) {
     $('result2').innerHTML = `<div class="err">${err}</div>`;
@@ -502,6 +588,7 @@ function renderStep2Result(d) {
   const ss = d.shot_script;
   const shots = pp.shots;
   const tr = d.transcript;
+  const analysisId = d.analysis_id || '';
 
   let html = `
     <div class="panel">
@@ -525,6 +612,11 @@ function renderStep2Result(d) {
     </div>
     <div class="panel">
       <h2>镜头脚本（含台词）</h2>
+      <div style="margin-bottom:12px;">
+        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
+          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出CSV</button>
+        </a>` : ''}
+      </div>
       <div id="shotScript"></div>
     </div>
   `;
@@ -569,6 +661,7 @@ $('form3').addEventListener('submit', async (e) => {
 
   const fd = new FormData(e.target);
   fd.append('preprocess_ref', state.preprocess.ref);
+  fd.append('analysis_id', state.analysis_id || '');
 
   try {
     const resp = await fetch('/dev/step3/video_understand', { method: 'POST', body: fd });
@@ -582,6 +675,7 @@ $('form3').addEventListener('submit', async (e) => {
     state.shot_script = data.shot_script;
     markStepDone(3);
     renderStep3Result(data);
+    loadAnalysisHistory();  // 刷新历史列表
   } catch (err) {
     $('result3').innerHTML = `<div class="err">${err}</div>`;
     $('result3').classList.remove('hidden');
@@ -593,6 +687,7 @@ $('form3').addEventListener('submit', async (e) => {
 function renderStep3Result(d) {
   const vu = d.video_understand;
   const ss = d.shot_script;
+  const analysisId = d.analysis_id || '';
 
   $('result3').innerHTML = `
     <div class="panel">
@@ -605,6 +700,11 @@ function renderStep3Result(d) {
     </div>
     <div class="panel">
       <h2>镜头脚本（带画面描述）</h2>
+      <div style="margin-bottom:12px;">
+        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
+          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出CSV</button>
+        </a>` : ''}
+      </div>
       <div id="shotScript3"></div>
     </div>
   `;
@@ -616,6 +716,11 @@ function renderStep3Result(d) {
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', () => {
+  loadAnalysisHistory();
+});
 </script>
 </body>
 </html>

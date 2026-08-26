@@ -1,0 +1,180 @@
+{
+  "analysis_id": "cfa97e8c29fa",
+  "created_at": "2026-08-26T15:04:21.192187",
+  "video_name": "hv_8f385662e92d8122",
+  "preprocess": {
+    "ref": "preprocess_result:pp_hv_8f385662e92d8122@v2",
+    "metadata": {
+      "duration_ms": 9641,
+      "width": 540,
+      "height": 960,
+      "fps": 25.0,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio": true
+    },
+    "shots": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 3240
+      },
+      {
+        "index": 1,
+        "start_ms": 3240,
+        "end_ms": 6480
+      },
+      {
+        "index": 2,
+        "start_ms": 6480,
+        "end_ms": 9641
+      }
+    ],
+    "audio_asset_id": "asset_596096bc465c4f0b",
+    "keyframes": [
+      [
+        "asset_7c8b50141e954d71",
+        "asset_7c8b50141e954d71",
+        "asset_7c8b50141e954d71"
+      ],
+      [
+        "asset_e4ef6169c1714d8d",
+        "asset_e4ef6169c1714d8d",
+        "asset_e4ef6169c1714d8d"
+      ],
+      [
+        "asset_c8b6debb0ad24edb",
+        "asset_c8b6debb0ad24edb",
+        "asset_c8b6debb0ad24edb"
+      ]
+    ],
+    "keyframe_timestamps": [
+      [
+        540,
+        1620,
+        2700
+      ],
+      [
+        3780,
+        4860,
+        5940
+      ],
+      [
+        7006,
+        8060,
+        9114
+      ]
+    ],
+    "frames_per_shot": 3,
+    "truncated_shots": false,
+    "notes": [
+      "540x960 9:16 9641ms，3 个镜头 × 3 帧/镜头"
+    ]
+  },
+  "transcript": {
+    "ref": "transcript:tr_pp_hv_8f385662e92d8122@v2",
+    "error": null,
+    "notes": [
+      "faster-whisper:small+t2s 识别语言 zh，3 句 / 41 字"
+    ],
+    "language": "zh",
+    "model": "faster-whisper:small+t2s",
+    "line_count": 3
+  },
+  "shot_script": {
+    "has_transcript": true,
+    "speech_ratio": 0.9211700031117104,
+    "silent_shot_count": 0,
+    "frames_per_shot": 3,
+    "entries": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 3240,
+        "duration_ms": 3240,
+        "keyframe_asset_ids": [
+          "asset_7c8b50141e954d71",
+          "asset_7c8b50141e954d71",
+          "asset_7c8b50141e954d71"
+        ],
+        "keyframe_at_ms": [
+          540,
+          1620,
+          2700
+        ],
+        "visual_description": null,
+        "speech_ratio": 0.7716049382716049,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "很多人以为洗脸要用热水",
+            "start_ms": 0,
+            "end_ms": 2500,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "start_ms": 3240,
+        "end_ms": 6480,
+        "duration_ms": 3240,
+        "keyframe_asset_ids": [
+          "asset_e4ef6169c1714d8d",
+          "asset_e4ef6169c1714d8d",
+          "asset_e4ef6169c1714d8d"
+        ],
+        "keyframe_at_ms": [
+          3780,
+          4860,
+          5940
+        ],
+        "visual_description": null,
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "其实温水才对,热水会破坏皮肤屏障",
+            "start_ms": 2500,
+            "end_ms": 6500,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "start_ms": 6480,
+        "end_ms": 9641,
+        "duration_ms": 3161,
+        "keyframe_asset_ids": [
+          "asset_c8b6debb0ad24edb",
+          "asset_c8b6debb0ad24edb",
+          "asset_c8b6debb0ad24edb"
+        ],
+        "keyframe_at_ms": [
+          7006,
+          8060,
+          9114
+        ],
+        "visual_description": null,
+        "speech_ratio": 0.9936728883264789,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "记住这一点,你的皮肤会好很多",
+            "start_ms": 6500,
+            "end_ms": 9700,
+            "spans_shot_boundary": false
+          }
+        ]
+      }
+    ],
+    "rendered": "总时长 9641ms，共 3 个镜头，语音占比 92%\n[镜头0] 0-3240ms（3240ms）\n  画面：（待视觉理解）\n  台词：很多人以为洗脸要用热水\n[镜头1] 3240-6480ms（3240ms）\n  画面：（待视觉理解）\n  台词：其实温水才对,热水会破坏皮肤屏障（跨镜头）\n[镜头2] 6480-9641ms（3161ms）\n  画面：（待视觉理解）\n  台词：记住这一点,你的皮肤会好很多"
+  },
+  "hot_video": {
+    "ref": "hot_video:hv_8f385662e92d8122@v1"
+  },
+  "video_understand": {
+    "ref": null
+  }
+}
