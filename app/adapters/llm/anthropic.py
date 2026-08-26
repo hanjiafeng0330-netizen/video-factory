@@ -90,17 +90,17 @@ class AnthropicClient:
         content: list[dict[str, Any]] = []
         for path in image_paths:
             if not path.is_file():
-                raise CapabilityError(
-                    ErrorCode.STORAGE_FAILURE, f"图片文件不存在：{path}"
-                )
-            content.append({
-                "type": "image",
-                "source": {
-                    "type": "base64",
-                    "media_type": self._detect_media_type(path),
-                    "data": self._encode_base64(path),
-                },
-            })
+                raise CapabilityError(ErrorCode.STORAGE_FAILURE, f"图片文件不存在：{path}")
+            content.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": self._detect_media_type(path),
+                        "data": self._encode_base64(path),
+                    },
+                }
+            )
         content.append({"type": "text", "text": user_text})
 
         try:
@@ -127,15 +127,16 @@ class AnthropicClient:
         except anthropic.APITimeoutError as exc:
             raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, f"LLM 调用超时：{exc}") from exc
         except Exception as exc:
-            raise CapabilityError(
-                ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}"
-            ) from exc
+            raise CapabilityError(ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}") from exc
 
         text = "".join(block.text for block in response.content if block.type == "text")
         return LLMResponse(
             text=text,
             raw_response=response,
-            usage={"input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens},
+            usage={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+            },
         )
 
     def text(
@@ -170,15 +171,16 @@ class AnthropicClient:
         except anthropic.APITimeoutError as exc:
             raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, f"LLM 调用超时：{exc}") from exc
         except Exception as exc:
-            raise CapabilityError(
-                ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}"
-            ) from exc
+            raise CapabilityError(ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}") from exc
 
         text = "".join(block.text for block in response.content if block.type == "text")
         return LLMResponse(
             text=text,
             raw_response=response,
-            usage={"input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens},
+            usage={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+            },
         )
 
     @staticmethod
@@ -195,4 +197,5 @@ class AnthropicClient:
     @staticmethod
     def _encode_base64(path: Path) -> str:
         import base64
+
         return base64.b64encode(path.read_bytes()).decode()

@@ -173,6 +173,11 @@
       <span class="step-title">视频理解</span>
       <div class="step-desc">LLM分析（可选）</div>
     </div>
+    <div class="step" data-step="4" onclick="showStep(4)">
+      <span class="step-num">4</span>
+      <span class="step-title">营销分析</span>
+      <div class="step-desc">提取营销口径（可选）</div>
+    </div>
   </div>
 
   <!-- 步骤1：上传视频 -->
@@ -273,6 +278,20 @@
       <p class="hint">调用视觉模型分析每个镜头的画面内容，生成综合描述。</p>
     </div>
     <div id="result3" class="hidden"></div>
+  </div>
+
+  <!-- 步骤4：营销分析 -->
+  <div class="step-content" id="step4">
+    <div class="panel">
+      <h2>营销分析：提取营销口径</h2>
+      <form id="form4">
+        <div class="row">
+          <button type="submit" id="btn4">开始营销分析</button>
+        </div>
+      </form>
+      <p class="hint">基于镜头脚本提取钩子、痛点、卖点结构、视觉风格等营销维度。</p>
+    </div>
+    <div id="result4" class="hidden"></div>
   </div>
 </main>
 </div>
@@ -711,6 +730,75 @@ function renderStep3Result(d) {
   $('result3').classList.remove('hidden');
 
   renderShotScript(ss, 'shotScript3');
+}
+
+// 步骤4：营销分析
+$('form4').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.video_understand) { alert('请先完成步骤3视频理解'); return; }
+  const btn = $('btn4');
+  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
+
+  const fd = new FormData(e.target);
+  fd.append('shot_script_ref', state.video_understand.ref);
+  fd.append('analysis_id', state.analysis_id || '');
+
+  try {
+    const resp = await fetch('/dev/step4/marketing_analysis', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (!resp.ok) {
+      $('result4').innerHTML = `<div class="err">${data.detail || JSON.stringify(data)}</div>`;
+      $('result4').classList.remove('hidden');
+      return;
+    }
+    state.marketing_analysis = data.marketing_analysis;
+    markStepDone(4);
+    renderStep4Result(data);
+    loadAnalysisHistory();
+  } catch (err) {
+    $('result4').innerHTML = `<div class="err">${err}</div>`;
+    $('result4').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '开始营销分析';
+  }
+});
+
+function renderStep4Result(d) {
+  const ma = d.marketing_analysis;
+  const analysisId = d.analysis_id || '';
+
+  $('result4').innerHTML = `
+    <div class="panel">
+      <h2>营销分析结果</h2>
+      <dl class="kv">
+        <dt>产物引用</dt><dd><code>${ma.ref}</code></dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h2>钩子</h2>
+      <p>${escapeHtml(ma.hook || '未识别到钩子')}</p>
+    </div>
+    <div class="panel">
+      <h2>痛点</h2>
+      <p>${escapeHtml(ma.pain_points || '未识别到痛点')}</p>
+    </div>
+    <div class="panel">
+      <h2>卖点结构</h2>
+      <p>${escapeHtml(ma.selling_point_structure || '未识别到卖点结构')}</p>
+    </div>
+    <div class="panel">
+      <h2>视觉风格</h2>
+      <p>${escapeHtml(ma.visual_style || '未识别到视觉风格')}</p>
+    </div>
+    <div class="panel">
+      <h2>备注</h2>
+      <p>${escapeHtml(ma.notes || '无')}</p>
+      ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
+        <button class="secondary" style="padding:6px 12px;font-size:12px;margin-top:12px;">导出完整CSV</button>
+      </a>` : ''}
+    </div>
+  `;
+  $('result4').classList.remove('hidden');
 }
 
 function escapeHtml(s) {

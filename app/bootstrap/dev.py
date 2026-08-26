@@ -61,9 +61,7 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
 
     # LLM 客户端
     if settings.llm.api_key is None:
-        raise RuntimeError(
-            "开发档需要配置 LLM API 密钥。请在 .env.dev 中设置 VF_LLM__API_KEY"
-        )
+        raise RuntimeError("开发档需要配置 LLM API 密钥。请在 .env.dev 中设置 VF_LLM__API_KEY")
     llm = AnthropicClient(
         base_url=settings.llm.base_url,
         api_key=settings.llm.api_key.get_secret_value(),
@@ -89,6 +87,7 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
                 llm=llm,
                 prompts=prompts,
                 vision_model=settings.llm.vision_model,
+                text_model=settings.llm.text_model,
             )
         ),
         artifacts=artifacts,

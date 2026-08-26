@@ -11,15 +11,15 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 import shutil
 import tempfile
 import uuid
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
-from starlette.responses import StreamingResponse
 
 from app.api.deps import container_of
 from app.domain.assets import RightsStatus
@@ -27,8 +27,11 @@ from app.domain.capability import CapabilityRequest
 from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.hot_video import SourcePlatform
 from app.domain.media import ShotList
+from app.domain.refs import ArtifactRef
 from app.domain.shot_script import ShotScript, build_shot_script, render_for_analysis
 from app.domain.transcript import Transcript
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dev", tags=["dev-ui"])
 
@@ -37,7 +40,7 @@ _MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 _ANALYSES_DIR = Path(".local_analyses")  # 分析结果持久化目录
 
 
-def _init_analyses_dir():
+def _init_analyses_dir() -> None:
     """初始化分析结果目录。"""
     _ANALYSES_DIR.mkdir(exist_ok=True)
 
@@ -54,7 +57,7 @@ def _load_analysis(analysis_id: str) -> dict[str, Any] | None:
     """加载分析结果。"""
     path = _ANALYSES_DIR / f"{analysis_id}.json"
     if path.exists():
-        return json.loads(path.read_text())
+        return cast(dict[str, Any], json.loads(path.read_text()))
     return None
 
 
@@ -67,15 +70,17 @@ def _list_analyses() -> list[dict[str, Any]]:
         if path.name.startswith("._"):
             continue
         data = json.loads(path.read_text())
-        results.append({
-            "id": path.stem,
-            "created_at": data.get("created_at", ""),
-            "video_name": data.get("video_name", ""),
-            "hot_video_ref": data.get("hot_video", {}).get("ref", ""),
-            "shot_count": len(data.get("shot_script", {}).get("entries", [])),
-            "has_transcript": data.get("shot_script", {}).get("has_transcript", False),
-            "has_visual_description": data.get("video_understand", {}).get("ref") is not None,
-        })
+        results.append(
+            {
+                "id": path.stem,
+                "created_at": data.get("created_at", ""),
+                "video_name": data.get("video_name", ""),
+                "hot_video_ref": data.get("hot_video", {}).get("ref", ""),
+                "shot_count": len(data.get("shot_script", {}).get("entries", [])),
+                "has_transcript": data.get("shot_script", {}).get("has_transcript", False),
+                "has_visual_description": data.get("video_understand", {}).get("ref") is not None,
+            }
+        )
     return results
 
 
@@ -117,51 +122,67 @@ async def export_analysis_csv(analysis_id: str, request: Request) -> Response:
     writer = csv.writer(output)
 
     # 表头
-    writer.writerow([
-        "镜头序号", "开始时间(ms)", "结束时间(ms)", "时长(ms)",
-        "画面描述", "台词", "台词开始(ms)", "台词结束(ms)", "跨镜头",
-        "关键帧数", "语音占比", "是否静音",
-    ])
+    writer.writerow(
+        [
+            "镜头序号",
+            "开始时间(ms)",
+            "结束时间(ms)",
+            "时长(ms)",
+            "画面描述",
+            "台词",
+            "台词开始(ms)",
+            "台词结束(ms)",
+            "跨镜头",
+            "关键帧数",
+            "语音占比",
+            "是否静音",
+        ]
+    )
 
     # 数据行
     for entry in entries:
         lines = entry.get("lines", [])
-        for i, line in enumerate(lines):
-            writer.writerow([
-                entry["index"],
-                entry["start_ms"],
-                entry["end_ms"],
-                entry["duration_ms"],
-                entry.get("visual_description", ""),
-                line.get("text", ""),
-                line.get("start_ms", ""),
-                line.get("end_ms", ""),
-                "是" if line.get("spans_shot_boundary") else "否",
-                len(entry.get("keyframe_asset_ids", [])),
-                f"{entry.get('speech_ratio', 0):.0%}",
-                "是" if entry.get("is_silent") else "否",
-            ])
+        for _i, line in enumerate(lines):
+            writer.writerow(
+                [
+                    entry["index"],
+                    entry["start_ms"],
+                    entry["end_ms"],
+                    entry["duration_ms"],
+                    entry.get("visual_description", ""),
+                    line.get("text", ""),
+                    line.get("start_ms", ""),
+                    line.get("end_ms", ""),
+                    "是" if line.get("spans_shot_boundary") else "否",
+                    len(entry.get("keyframe_asset_ids", [])),
+                    f"{entry.get('speech_ratio', 0):.0%}",
+                    "是" if entry.get("is_silent") else "否",
+                ]
+            )
         # 如果没有台词，也输出一行
         if not lines:
-            writer.writerow([
-                entry["index"],
-                entry["start_ms"],
-                entry["end_ms"],
-                entry["duration_ms"],
-                entry.get("visual_description", ""),
-                "", "", "", "",
-                len(entry.get("keyframe_asset_ids", [])),
-                f"{entry.get('speech_ratio', 0):.0%}",
-                "是" if entry.get("is_silent") else "否",
-            ])
+            writer.writerow(
+                [
+                    entry["index"],
+                    entry["start_ms"],
+                    entry["end_ms"],
+                    entry["duration_ms"],
+                    entry.get("visual_description", ""),
+                    "",
+                    "",
+                    "",
+                    "",
+                    len(entry.get("keyframe_asset_ids", [])),
+                    f"{entry.get('speech_ratio', 0):.0%}",
+                    "是" if entry.get("is_silent") else "否",
+                ]
+            )
 
     csv_content = output.getvalue()
     return Response(
         content=csv_content.encode("utf-8-sig"),  # utf-8-sig 让 Excel 正确识别中文
         media_type="text/csv; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="analysis_{analysis_id}.csv"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="analysis_{analysis_id}.csv"'},
     )
 
 
@@ -306,7 +327,9 @@ async def step2_preprocess(
             "language": transcript.language if transcript else None,
             "model": transcript.model_name if transcript else None,
             "line_count": len(transcript.lines) if transcript else 0,
-        } if run_transcription else None,
+        }
+        if run_transcription
+        else None,
         "shot_script": {
             "has_transcript": script.has_transcript,
             "speech_ratio": script.speech_ratio,
@@ -401,12 +424,14 @@ async def step3_video_understand(
     transcript = None
     try:
         from app.domain.refs import ArtifactType
+
         for relation in container.lineage.relations_out_of(pre_ref):
             if relation.target.type == ArtifactType.TRANSCRIPT:
                 transcript = container.artifacts.get(relation.target).body_as(Transcript)
                 break
-    except Exception:
-        pass
+    except Exception as exc:
+        # 转写血缘查询失败不阻断画面描述展示，但在开发环境可见。
+        logger.warning("读取转写血缘失败：%s", exc)
 
     # 用原始预处理数据重新构建镜头脚本（包含台词）
     script = build_shot_script(
@@ -418,18 +443,16 @@ async def step3_video_understand(
     )
 
     # 将视频理解的画面描述回填到脚本中
-    for entry, vu_entry in zip(script.entries, vu_script.entries):
+    for entry, vu_entry in zip(script.entries, vu_script.entries, strict=False):
         if vu_entry.visual_description:
-            object.__setattr__(entry, 'visual_description', vu_entry.visual_description)
+            object.__setattr__(entry, "visual_description", vu_entry.visual_description)
 
-    return {
+    result = {
         "analysis_id": analysis_id,
         "video_understand": {
             "ref": str(video_understand_ref),
             "total_shots": len(script.entries),
-            "shots_with_visual_description": sum(
-                1 for e in script.entries if e.visual_description
-            ),
+            "shots_with_visual_description": sum(1 for e in script.entries if e.visual_description),
             "notes": vu_result.notes,
         },
         "shot_script": {
@@ -471,10 +494,72 @@ async def step3_video_understand(
             saved_data["video_understand"] = {
                 "ref": str(video_understand_ref),
                 "total_shots": len(script.entries),
-                "shots_with_visual_description": sum(1 for e in script.entries if e.visual_description),
+                "shots_with_visual_description": sum(
+                    1 for e in script.entries if e.visual_description
+                ),
                 "notes": list(vu_result.notes),
             }
             saved_data["shot_script"] = result["shot_script"]
+            _save_analysis(analysis_id, saved_data)
+
+    return result
+
+
+# ============================================================================
+# 步骤4：营销分析（可选，调用 LLM 提取营销口径）
+# ============================================================================
+@router.post("/step4/marketing_analysis")
+async def step4_marketing_analysis(
+    request: Request,
+    shot_script_ref: Annotated[str, Form()],
+    analysis_id: Annotated[str, Form()] = "",
+) -> dict[str, Any]:
+    """步骤 4：营销分析，调用 LLM 提取营销口径（钩子/痛点/卖点结构/视觉风格）。"""
+    container = container_of(request)
+
+    # 解析引用
+    ss_ref = _parse_ref(shot_script_ref)
+
+    # 获取提示词
+    marketing_prompt = container.prompts.resolve(
+        "marketing_analysis.prompt",
+        variables={"shot_script": ""},  # 占位符，实际值在能力内部填充
+    )
+
+    # 调用营销分析能力
+    ma = container.capabilities.get("marketing_analysis")
+    run_id = uuid.uuid4().hex[:12]
+    ma_result = await ma.execute(
+        CapabilityRequest(
+            input_refs=(ss_ref,),
+            resolved_prompts=(marketing_prompt,),
+            idempotency_key=f"dev-ma-{run_id}",
+        )
+    )
+    ma_ref = ma_result.output_refs[0]
+
+    # 获取分析结果
+    ma_body = container.artifacts.get(ma_ref).body
+
+    # 构建响应
+    result = {
+        "analysis_id": analysis_id,
+        "marketing_analysis": {
+            "ref": str(ma_ref),
+            "hook": ma_body.get("hook", ""),
+            "pain_points": ma_body.get("pain_points", ""),
+            "selling_point_structure": ma_body.get("selling_point_structure", ""),
+            "visual_style": ma_body.get("visual_style", ""),
+            "notes": ma_body.get("notes", ""),
+            "raw_output": ma_body.get("raw_output", ""),
+        },
+    }
+
+    # 更新已保存的分析结果
+    if analysis_id:
+        saved_data = _load_analysis(analysis_id)
+        if saved_data:
+            saved_data["marketing_analysis"] = result["marketing_analysis"]
             _save_analysis(analysis_id, saved_data)
 
     return result
@@ -491,22 +576,26 @@ async def list_prompts(request: Request) -> dict[str, Any]:
     for template in container.prompts.templates():
         versions = []
         for v in container.prompts.history(template.key):
-            versions.append({
-                "version": v.version,
-                "status": v.status,
-                "body": v.body,
-                "change_note": v.change_note,
-                "author": v.author,
-                "created_at": v.created_at.isoformat(),
-                "activated_at": v.activated_at.isoformat() if v.activated_at else None,
-            })
-        prompts_data.append({
-            "key": template.key,
-            "stage": template.stage,
-            "purpose": template.purpose,
-            "variables": list(template.variables),
-            "versions": versions,
-        })
+            versions.append(
+                {
+                    "version": v.version,
+                    "status": v.status,
+                    "body": v.body,
+                    "change_note": v.change_note,
+                    "author": v.author,
+                    "created_at": v.created_at.isoformat(),
+                    "activated_at": v.activated_at.isoformat() if v.activated_at else None,
+                }
+            )
+        prompts_data.append(
+            {
+                "key": template.key,
+                "stage": template.stage,
+                "purpose": template.purpose,
+                "variables": list(template.variables),
+                "versions": versions,
+            }
+        )
     return {"prompts": prompts_data}
 
 
@@ -569,20 +658,17 @@ async def capabilities(request: Request) -> list[dict[str, Any]]:
             "accepts": list(spec.accepts),
             "produces": list(spec.produces),
             "required_prompts": [
-                {"key": prompt.key, "purpose": prompt.purpose}
-                for prompt in spec.required_prompts
+                {"key": prompt.key, "purpose": prompt.purpose} for prompt in spec.required_prompts
             ],
         }
         for spec in (capability.spec() for capability in container.capabilities.all())
     ]
 
 
-def _parse_ref(raw: str) -> "ArtifactRef":
+def _parse_ref(raw: str) -> ArtifactRef:
     """`type:id@vN` → ArtifactRef。"""
     from app.domain.refs import ArtifactRef, ArtifactType
 
     head, _, version = raw.partition("@v")
     artifact_type, _, artifact_id = head.partition(":")
-    return ArtifactRef(
-        type=ArtifactType(artifact_type), id=artifact_id, version=int(version)
-    )
+    return ArtifactRef(type=ArtifactType(artifact_type), id=artifact_id, version=int(version))

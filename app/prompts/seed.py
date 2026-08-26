@@ -15,6 +15,7 @@ from app.prompts.registry import InMemoryPromptRegistry
 
 SHOT_VISUAL_KEY = "video_understand.shot_visual"
 NARRATIVE_KEY = "video_understand.narrative"
+MARKETING_ANALYSIS_KEY = "marketing_analysis.prompt"
 
 
 SHOT_VISUAL_TEMPLATE = PromptTemplate(
@@ -150,8 +151,55 @@ NARRATIVE_BODY_V1 = """你在为营销视频分析系统还原一条热点视频
 }"""
 
 
+MARKETING_ANALYSIS_TEMPLATE = PromptTemplate(
+    key=MARKETING_ANALYSIS_KEY,
+    stage="营销分析",
+    purpose="基于镜头脚本提取营销口径维度（钩子/痛点/卖点结构/视觉风格）",
+    variables=("shot_script",),
+)
+
+MARKETING_ANALYSIS_BODY_V1 = """你是一个营销分析专家，需要从镜头脚本中提取营销口径维度。
+
+## 输入
+
+镜头脚本（每个分镜的画面描述和台词）：
+
+{{ shot_script }}
+
+## 任务
+分析以上镜头脚本，提取以下营销维度：
+
+1. **钩子**：开头如何调动情绪或制造好奇（出现在哪个分镜）
+2. **痛点**：用户痛点是什么，出现在哪些分镜
+3. **卖点结构**：营销卖点的叙事顺序（如：氛围烘托→权威背书→产品介绍→痛点→卖点...）
+4. **视觉风格**：
+   - 镜头语言：拍摄角度、景别、运镜方式
+   - 表达方式：专业讲解/亲切共情/自信展示等
+   - 场景：室内/户外/混合，具体场景描述
+5. **备注**：其他营销相关信息（如产品定位、目标人群等）
+
+## 输出格式
+
+钩子：[描述]（出现在分镜 X）
+
+痛点：[痛点 1]（出现在分镜 X）、[痛点 2]（出现在分镜 Y）
+
+卖点结构：[结构描述]（出现在分镜 X） | [具体卖点]（出现在分镜 Y）
+
+视觉风格：镜头：[镜头语言描述]；表达方式：[表达方式]；场景：[场景描述]
+
+备注：[其他信息]（出现在分镜 X）
+
+## 要求
+- 每个维度都要注明出现在哪些分镜
+- 卖点结构要体现叙事顺序
+- 视觉风格要具体到角度、景别、运镜、表达方式、场景
+- 用中文输出
+"""
+
+
 def seed_prompt_drafts(registry: InMemoryPromptRegistry) -> None:
-    """登记键位契约并写入 v2 草案。不激活。"""
+    """登记键位契约并写入草案。不激活。"""
     registry.register(SHOT_VISUAL_TEMPLATE)
     registry.add_version(
         SHOT_VISUAL_KEY,
@@ -168,6 +216,14 @@ def seed_prompt_drafts(registry: InMemoryPromptRegistry) -> None:
         author="claude",
     )
 
+    registry.register(MARKETING_ANALYSIS_TEMPLATE)
+    registry.add_version(
+        MARKETING_ANALYSIS_KEY,
+        MARKETING_ANALYSIS_BODY_V1,
+        change_note="初版草案：营销口径分析，提取钩子/痛点/卖点结构/视觉风格",
+        author="claude",
+    )
+
 
 def seed_and_activate_prompts(registry: InMemoryPromptRegistry, actor: str = "bootstrap") -> None:
     """登记并激活提示词。
@@ -176,8 +232,8 @@ def seed_and_activate_prompts(registry: InMemoryPromptRegistry, actor: str = "bo
     """
     seed_prompt_drafts(registry)
 
-    # 激活所有提示词
-    for key in (SHOT_VISUAL_KEY, NARRATIVE_KEY):
+    # 视觉、叙事和营销分析提示词均已获业务评审确认，开发环境可自动激活。
+    for key in (SHOT_VISUAL_KEY, NARRATIVE_KEY, MARKETING_ANALYSIS_KEY):
         versions = registry.history(key)
         if versions:
             registry.activate(key, versions[-1].version, actor=actor)

@@ -21,6 +21,7 @@ class ArtifactType(StrEnum):
     PREPROCESS_RESULT = "preprocess_result"
     TRANSCRIPT = "transcript"
     SHOT_SCRIPT = "shot_script"
+    MARKETING_ANALYSIS = "marketing_analysis"
     VIDEO_ANALYSIS = "video_analysis"
     SCRIPT_PATTERN = "script_pattern"
     PRODUCT_PROFILE = "product_profile"

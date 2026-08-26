@@ -18,6 +18,7 @@ from fastapi import Request
 from app.capabilities.registry import CapabilityRegistry
 from app.domain.assets import AssetStore
 from app.domain.lineage import LineageRepository
+from app.domain.prompt_registry import PromptRegistry
 from app.domain.versioning import ArtifactRepository
 
 
@@ -35,6 +36,9 @@ class Container(Protocol):
 
     @property
     def lineage(self) -> LineageRepository: ...
+
+    @property
+    def prompts(self) -> PromptRegistry: ...
 
 
 def container_of(request: Request) -> Container:

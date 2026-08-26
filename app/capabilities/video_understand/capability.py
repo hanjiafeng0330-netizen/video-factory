@@ -17,10 +17,10 @@ from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.adapters.llm import LLMClient
 from app.domain.assets import AssetStore
 from app.domain.capability import Capability, CapabilityRequest, CapabilityResult
 from app.domain.errors import CapabilityError, ErrorCode
+from app.domain.llm import LLMClient
 from app.domain.media import ShotList
 from app.domain.prompt_registry import PromptRegistry
 from app.domain.prompts import PromptRequirement
@@ -104,12 +104,11 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
 
             # 获取关键帧文件路径
             image_paths = [
-                self._assets.open_path(asset_id)
-                for asset_id in entry.keyframe_asset_ids
+                self._assets.open_path(asset_id) for asset_id in entry.keyframe_asset_ids
             ]
 
             # 构建用户提示词变量
-            variables = {
+            variables: dict[str, object] = {
                 "shot_index": str(entry.index),
                 "start_ms": str(entry.start_ms),
                 "end_ms": str(entry.end_ms),

@@ -47,13 +47,16 @@ def test_seeded_prompts_render_in_preview(registry: InMemoryPromptRegistry, key:
         assert f"<{name}>" in text
 
 
-def test_both_prompts_are_grouped_under_one_stage(
+def test_prompts_are_grouped_by_business_stage(
     registry: InMemoryPromptRegistry,
 ) -> None:
-    """配置管理台按环节分组，两个提示词应当出现在同一个环节下。"""
+    """配置管理台按环节分组，视频理解与营销分析提示词必须各归其位。"""
+    from app.prompts.seed import MARKETING_ANALYSIS_KEY
+
     grouped = registry.templates_by_stage()
-    assert set(grouped) == {"视频理解"}
+    assert set(grouped) == {"视频理解", "营销分析"}
     assert {t.key for t in grouped["视频理解"]} == set(ALL_KEYS)
+    assert {t.key for t in grouped["营销分析"]} == {MARKETING_ANALYSIS_KEY}
 
 
 @pytest.mark.parametrize("key", ALL_KEYS)
