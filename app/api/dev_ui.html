@@ -72,6 +72,12 @@
   .preview-missing { color: var(--dim); display: grid; place-items: center; height: 180px; }
   .library-info { min-width: 0; }
   .tech-id { color: var(--dim); font: 12px ui-monospace, monospace; margin: -8px 0 14px; }
+  .analysis-package-button {
+    display: inline-block; margin: 4px 6px 4px 0; padding: 6px 10px;
+    border: 1px solid #35537b; border-radius: 6px; background: #1d2a3a;
+    color: #c8d9f2; cursor: pointer; font: 12px/1.3 -apple-system, "PingFang SC", sans-serif;
+  }
+  .analysis-package-button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
   .panel h2 {
     font-size: 13px; margin: 0 0 16px; color: var(--dim);
     text-transform: uppercase; letter-spacing: .06em; font-weight: 600;
@@ -455,7 +461,9 @@ function renderHotVideos(videos) {
         <button class="secondary" style="padding:5px 10px;font-size:11px;" onclick="useLibraryVideo('${v.ref}')">用于预处理</button>
         ${(v.available_actions || []).includes('video_understand') ? `<button class="secondary" style="padding:5px 10px;font-size:11px;margin-left:6px;" onclick="alert('请先选择该视频的预处理结果')">视频理解</button>` : ''}
         ${(v.analysis_packages || []).map(a => `
-          <span class="tag" style="margin-left:6px;">${a.id} · ${a.shot_count}镜头</span>
+          <button class="analysis-package-button" onclick="viewAnalysis('${a.id}')">
+            打开分析包 · ${a.shot_count}镜头
+          </button>
         `).join('') || '<span class="hint" style="margin-left:8px;">暂无分析包</span>'}
       </div>
       </div>
@@ -519,10 +527,13 @@ async function viewAnalysis(analysisId) {
   try {
     const resp = await fetch(`/dev/analyses/${analysisId}`);
     const data = await resp.json();
-    // 恢复到分析结果状态
-    state.hot_video = { ref: data.hot_video.ref };
+    // 恢复到分析结果状态。analysis_id 必须恢复，否则后续重跑无法写回原分析包。
+    state.analysis_id = analysisId;
+    state.hot_video = { ref: data.hot_video.ref, original_filename: data.video_name };
     state.preprocess = data.preprocess;
+    state.transcript = data.transcript;
     state.shot_script = data.shot_script;
+    state.marketing_analysis = data.marketing_analysis || null;
     if (data.video_understand && data.video_understand.ref) {
       state.video_understand = data.video_understand;
     }
@@ -531,7 +542,11 @@ async function viewAnalysis(analysisId) {
     if (data.video_understand && data.video_understand.ref) {
       renderStep3Result(data);
     }
-    showStep(2);
+    if (data.marketing_analysis && data.marketing_analysis.ref) {
+      renderStep4Result(data);
+    }
+    showStep(data.marketing_analysis && data.marketing_analysis.ref ? 4 :
+             data.video_understand && data.video_understand.ref ? 3 : 2);
   } catch (err) {
     alert(`加载失败：${err}`);
   }
@@ -910,6 +925,7 @@ $('form4').addEventListener('submit', async (e) => {
 
 function renderStep4Result(d) {
   const ma = d.marketing_analysis;
+  if (!ma) return;
   const analysisId = d.analysis_id || '';
 
   $('result4').innerHTML = `
