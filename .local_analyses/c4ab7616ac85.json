@@ -1,0 +1,193 @@
+{
+  "analysis_id": "c4ab7616ac85",
+  "created_at": "2026-08-26T16:47:24.409592",
+  "video_name": "hv_8f385662e92d8122",
+  "preprocess": {
+    "ref": "preprocess_result:pp_hv_8f385662e92d8122@v1",
+    "metadata": {
+      "duration_ms": 9641,
+      "width": 540,
+      "height": 960,
+      "fps": 25.0,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio": true
+    },
+    "shots": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 3240
+      },
+      {
+        "index": 1,
+        "start_ms": 3240,
+        "end_ms": 6480
+      },
+      {
+        "index": 2,
+        "start_ms": 6480,
+        "end_ms": 9641
+      }
+    ],
+    "audio_asset_id": "asset_e2a40e95518a41a0",
+    "keyframes": [
+      [
+        "asset_a57b0589a4994e8f",
+        "asset_a57b0589a4994e8f",
+        "asset_a57b0589a4994e8f"
+      ],
+      [
+        "asset_e04cf35b0b6c459b",
+        "asset_e04cf35b0b6c459b",
+        "asset_e04cf35b0b6c459b"
+      ],
+      [
+        "asset_f87ea5670eef46f8",
+        "asset_f87ea5670eef46f8",
+        "asset_f87ea5670eef46f8"
+      ]
+    ],
+    "keyframe_timestamps": [
+      [
+        540,
+        1620,
+        2700
+      ],
+      [
+        3780,
+        4860,
+        5940
+      ],
+      [
+        7006,
+        8060,
+        9114
+      ]
+    ],
+    "frames_per_shot": 3,
+    "truncated_shots": false,
+    "notes": [
+      "540x960 9:16 9641ms，3 个镜头 × 3 帧/镜头"
+    ]
+  },
+  "transcript": {
+    "ref": "transcript:tr_pp_hv_8f385662e92d8122@v1",
+    "error": null,
+    "notes": [
+      "faster-whisper:small+t2s 识别语言 zh，3 句 / 41 字"
+    ],
+    "language": "zh",
+    "model": "faster-whisper:small+t2s",
+    "line_count": 3
+  },
+  "shot_script": {
+    "has_transcript": true,
+    "speech_ratio": 0.9211700031117104,
+    "silent_shot_count": 0,
+    "frames_per_shot": 3,
+    "entries": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 3240,
+        "duration_ms": 3240,
+        "keyframe_asset_ids": [
+          "asset_a57b0589a4994e8f",
+          "asset_a57b0589a4994e8f",
+          "asset_a57b0589a4994e8f"
+        ],
+        "keyframe_at_ms": [
+          540,
+          1620,
+          2700
+        ],
+        "visual_description": "整段镜头为纯红色静态画面，无可辨识主体 | 动作：无明显变化",
+        "speech_ratio": 0.7716049382716049,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "很多人以为洗脸要用热水",
+            "start_ms": 0,
+            "end_ms": 2500,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "start_ms": 3240,
+        "end_ms": 6480,
+        "duration_ms": 3240,
+        "keyframe_asset_ids": [
+          "asset_e04cf35b0b6c459b",
+          "asset_e04cf35b0b6c459b",
+          "asset_e04cf35b0b6c459b"
+        ],
+        "keyframe_at_ms": [
+          3780,
+          4860,
+          5940
+        ],
+        "visual_description": "整段镜头为纯绿色背景画面，无可辨识主体。 | 动作：无明显变化",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "其实温水才对,热水会破坏皮肤屏障",
+            "start_ms": 2500,
+            "end_ms": 6500,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "start_ms": 6480,
+        "end_ms": 9641,
+        "duration_ms": 3161,
+        "keyframe_asset_ids": [
+          "asset_f87ea5670eef46f8",
+          "asset_f87ea5670eef46f8",
+          "asset_f87ea5670eef46f8"
+        ],
+        "keyframe_at_ms": [
+          7006,
+          8060,
+          9114
+        ],
+        "visual_description": "画面为纯蓝色满屏，无人物或物体出现 | 动作：无明显变化",
+        "speech_ratio": 0.9936728883264789,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "记住这一点,你的皮肤会好很多",
+            "start_ms": 6500,
+            "end_ms": 9700,
+            "spans_shot_boundary": false
+          }
+        ]
+      }
+    ],
+    "rendered": "总时长 9641ms，共 3 个镜头，语音占比 92%\n[镜头0] 0-3240ms（3240ms）\n  画面：整段镜头为纯红色静态画面，无可辨识主体 | 动作：无明显变化\n  台词：很多人以为洗脸要用热水\n[镜头1] 3240-6480ms（3240ms）\n  画面：整段镜头为纯绿色背景画面，无可辨识主体。 | 动作：无明显变化\n  台词：其实温水才对,热水会破坏皮肤屏障（跨镜头）\n[镜头2] 6480-9641ms（3161ms）\n  画面：画面为纯蓝色满屏，无人物或物体出现 | 动作：无明显变化\n  台词：记住这一点,你的皮肤会好很多"
+  },
+  "hot_video": {
+    "ref": "hot_video:hv_8f385662e92d8122@v1"
+  },
+  "video_understand": {
+    "ref": "shot_script:ss_pp_hv_8f385662e92d8122@v2",
+    "total_shots": 3,
+    "shots_with_visual_description": 3,
+    "notes": []
+  },
+  "marketing_analysis": {
+    "ref": "marketing_analysis:ma_ss_pp_hv_8f385662e92d8122@v1",
+    "model": "gpt-5.4-mini",
+    "hook": "用“很多人以为洗脸要用热水”制造认知反差，先抛出常见误区，引发观众想知道“到底对不对”（出现在分镜0）",
+    "pain_points": "洗脸水温认知错误，误用热水会破坏皮肤屏障，导致皮肤状态变差、洗脸越洗越伤（出现在分镜0、分镜1）；用户需要记住正确洗脸方式，避免皮肤受损（出现在分镜2）",
+    "selling_point_structure": "常见误区引入→纠正认知（热水不对，温水才对）→说明后果（热水破坏皮肤屏障）→记忆强化/效果承诺（记住这一点，皮肤会好很多）（出现在分镜0-2）",
+    "visual_style": "镜头：全程为纯色满屏静态画面，无人物、无产品、无实景，属于极简抽象表达；景别为满屏特写/全屏视觉，没有可辨识主体，也无运镜变化；表达方式：偏专业科普、直接纠错式讲解，语气简洁明确，带一点教育引导；场景：无具体室内/户外场景，属于抽象背景式信息传达，分别为纯红、纯绿、纯蓝的纯色画面",
+    "notes": "整体定位更像“洗脸护肤知识科普”而非直接产品硬广，强调皮肤屏障护理与正确洗脸习惯；目标人群主要是有基础护肤需求、担心洗脸伤肤的普通消费者，尤其是关注敏感肌、屏障修护的人群（出现在分镜0-2）",
+    "raw_output": "钩子：用“很多人以为洗脸要用热水”制造认知反差，先抛出常见误区，引发观众想知道“到底对不对”（出现在分镜0）\n\n痛点：洗脸水温认知错误，误用热水会破坏皮肤屏障，导致皮肤状态变差、洗脸越洗越伤（出现在分镜0、分镜1）；用户需要记住正确洗脸方式，避免皮肤受损（出现在分镜2）\n\n卖点结构：常见误区引入→纠正认知（热水不对，温水才对）→说明后果（热水破坏皮肤屏障）→记忆强化/效果承诺（记住这一点，皮肤会好很多）（出现在分镜0-2）\n\n视觉风格：镜头：全程为纯色满屏静态画面，无人物、无产品、无实景，属于极简抽象表达；景别为满屏特写/全屏视觉，没有可辨识主体，也无运镜变化；表达方式：偏专业科普、直接纠错式讲解，语气简洁明确，带一点教育引导；场景：无具体室内/户外场景，属于抽象背景式信息传达，分别为纯红、纯绿、纯蓝的纯色画面\n\n备注：整体定位更像“洗脸护肤知识科普”而非直接产品硬广，强调皮肤屏障护理与正确洗脸习惯；目标人群主要是有基础护肤需求、担心洗脸伤肤的普通消费者，尤其是关注敏感肌、屏障修护的人群（出现在分镜0-2）"
+  }
+}

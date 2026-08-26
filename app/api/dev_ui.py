@@ -188,6 +188,76 @@ async def export_analysis_csv(analysis_id: str, request: Request) -> Response:
 
 
 # ============================================================================
+# 可复用结果目录
+# ============================================================================
+@router.get("/preprocess-results")
+async def list_preprocess_results(request: Request) -> list[dict[str, Any]]:
+    container = container_of(request)
+    results: list[dict[str, Any]] = []
+    for session in _list_analyses():
+        data = _load_analysis(session["id"])
+        if not data:
+            continue
+        pre = data.get("preprocess", {})
+        ref = pre.get("ref")
+        if not ref:
+            continue
+        try:
+            container.artifacts.get(_parse_ref(ref))
+            available = True
+        except CapabilityError:
+            available = False
+        results.append(
+            {
+                "analysis_id": session["id"],
+                "preprocess_ref": ref,
+                "transcript_ref": (data.get("transcript") or {}).get("ref"),
+                "video_name": data.get("video_name", ""),
+                "created_at": data.get("created_at", ""),
+                "shot_count": len(data.get("shot_script", {}).get("entries", [])),
+                "available": available,
+            }
+        )
+    return results
+
+
+@router.get("/video-understand-results")
+async def list_video_understand_results(request: Request) -> list[dict[str, Any]]:
+    container = container_of(request)
+    results: list[dict[str, Any]] = []
+    for session in _list_analyses():
+        data = _load_analysis(session["id"])
+        if not data:
+            continue
+        vu = data.get("video_understand") or {}
+        ref = vu.get("ref")
+        if not ref:
+            continue
+        try:
+            script = container.artifacts.get(_parse_ref(ref)).body_as(ShotScript)
+            available = True
+            has_transcript = script.has_transcript
+            coverage = sum(1 for entry in script.entries if entry.visual_description)
+        except CapabilityError:
+            available = False
+            has_transcript = False
+            coverage = 0
+        results.append(
+            {
+                "analysis_id": session["id"],
+                "shot_script_ref": ref,
+                "preprocess_ref": (data.get("preprocess") or {}).get("ref"),
+                "video_name": data.get("video_name", ""),
+                "created_at": data.get("created_at", ""),
+                "available": available,
+                "has_transcript": has_transcript,
+                "visual_coverage": coverage,
+            }
+        )
+    return results
+
+
+# ============================================================================
 # 步骤1：上传视频
 # ============================================================================
 @router.post("/step1/upload")
@@ -380,6 +450,7 @@ async def step3_video_understand(
     preprocess_ref: Annotated[str, Form()],
     analysis_id: Annotated[str, Form()] = "",
     vision_model: Annotated[str, Form()] = "",
+    transcript_ref: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤3：视频理解，调用LLM分析每个镜头。"""
     container = container_of(request)
@@ -405,12 +476,14 @@ async def step3_video_understand(
         },
     )
 
-    # 调用视频理解能力
+    # 调用视频理解能力。用户可以选择步骤2关联的 exact transcript 版本。
+    selected_transcript_ref = _parse_ref(transcript_ref) if transcript_ref else None
+    input_refs = (pre_ref,) + ((selected_transcript_ref,) if selected_transcript_ref else ())
     vu = container.capabilities.get("video_understand")
     run_id = uuid.uuid4().hex[:12]
     vu_result = await vu.execute(
         CapabilityRequest(
-            input_refs=(pre_ref,),
+            input_refs=input_refs,
             parameters={"vision_model": selected_model},
             resolved_prompts=(shot_visual_prompt,),
             idempotency_key=f"dev-vu-{run_id}",
@@ -418,42 +491,11 @@ async def step3_video_understand(
     )
     video_understand_ref = vu_result.output_refs[0]
 
-    # 获取带画面描述的镜头脚本（来自 video_understand）
-    vu_body = container.artifacts.get(video_understand_ref).body
-    vu_script = ShotScript.model_validate(vu_body)
-
-    # 获取原始预处理产物，以获取镜头/关键帧/时间戳信息
+    # 此为 canonical artifact：包含 selected transcript 的台词与视觉描述，
+    # 页面展示、CSV 导出和营销分析都必须使用同一份内容。
+    script = container.artifacts.get(video_understand_ref).body_as(ShotScript)
     pre_body = container.artifacts.get(pre_ref).body
-
-    # 使用传入的 analysis_id 或从预处理产物中获取
     analysis_id = analysis_id or pre_body.get("analysis_id", "")
-
-    # 查找是否有转写产物（可能被步骤2创建）
-    transcript = None
-    try:
-        from app.domain.refs import ArtifactType
-
-        for relation in container.lineage.relations_out_of(pre_ref):
-            if relation.target.type == ArtifactType.TRANSCRIPT:
-                transcript = container.artifacts.get(relation.target).body_as(Transcript)
-                break
-    except Exception as exc:
-        # 转写血缘查询失败不阻断画面描述展示，但在开发环境可见。
-        logger.warning("读取转写血缘失败：%s", exc)
-
-    # 用原始预处理数据重新构建镜头脚本（包含台词）
-    script = build_shot_script(
-        ShotList.model_validate(pre_body["shots"]),
-        transcript,
-        keyframes=tuple(tuple(f) for f in pre_body["keyframes"]),
-        keyframe_timestamps=tuple(tuple(t) for t in pre_body["keyframe_timestamps"]),
-        frames_per_shot=pre_body.get("frames_per_shot", 0),
-    )
-
-    # 将视频理解的画面描述回填到脚本中
-    for entry, vu_entry in zip(script.entries, vu_script.entries, strict=False):
-        if vu_entry.visual_description:
-            object.__setattr__(entry, "visual_description", vu_entry.visual_description)
 
     result = {
         "analysis_id": analysis_id,

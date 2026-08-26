@@ -26,6 +26,7 @@ from app.domain.prompt_registry import PromptRegistry
 from app.domain.prompts import PromptRequirement
 from app.domain.refs import ArtifactType
 from app.domain.shot_script import ShotScript, ShotScriptEntry, build_shot_script
+from app.domain.transcript import Transcript
 from app.domain.versioning import ArtifactRepository, ArtifactStatus
 
 
@@ -43,7 +44,10 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
     name: ClassVar[str] = "video_understand"
     stage: ClassVar[str] = "视频理解"
     summary: ClassVar[str] = "基于多帧关键帧描述每个镜头的画面内容与动作过程"
-    accepts: ClassVar[tuple[ArtifactType, ...]] = (ArtifactType.PREPROCESS_RESULT,)
+    accepts: ClassVar[tuple[ArtifactType, ...]] = (
+        ArtifactType.PREPROCESS_RESULT,
+        ArtifactType.TRANSCRIPT,
+    )
     produces: ClassVar[tuple[ArtifactType, ...]] = (ArtifactType.SHOT_SCRIPT,)
     parameters_model = VideoUnderstandParameters
     required_prompts: ClassVar[tuple[PromptRequirement, ...]] = (
@@ -89,10 +93,20 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
 
         preprocess = self._artifacts.get(preprocess_ref)
         preprocess_body = preprocess.body
+        transcript_ref = next(
+            (ref for ref in request.input_refs if ref.type is ArtifactType.TRANSCRIPT), None
+        )
+        transcript = (
+            self._artifacts.get(transcript_ref).body_as(Transcript)
+            if transcript_ref is not None
+            else None
+        )
 
-        # 构建镜头脚本（无转写版本，后续可扩展）
+        # 这是 canonical 镜头脚本：保留 ASR 台词，再补上视觉描述。它既是 UI 的
+        # 展示内容，也是营销分析的唯一输入，不能再由路由临时拼装另一个版本。
         shot_script = build_shot_script(
             shots=ShotList.model_validate(preprocess_body["shots"]),
+            transcript=transcript,
             keyframes=tuple(preprocess_body["keyframes"]),
             keyframe_timestamps=tuple(preprocess_body["keyframe_timestamps"]),
         )
@@ -144,7 +158,7 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
         # 构建新的镜头脚本
         result_script = ShotScript(
             entries=tuple(entries_with_descriptions),
-            has_transcript=False,  # video_understand 不包含转写
+            has_transcript=shot_script.has_transcript,
         )
 
         # 保存产物
@@ -153,7 +167,7 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
             artifact_id=f"ss_{preprocess_ref.id}",
             body=result_script.model_dump(),
             created_by=f"capability:{self.name}",
-            sources=(preprocess_ref,),
+            sources=(preprocess_ref,) + ((transcript_ref,) if transcript_ref else ()),
             status=ArtifactStatus.READY,
         )
 

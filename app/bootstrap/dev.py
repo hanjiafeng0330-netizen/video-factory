@@ -24,10 +24,9 @@ from app.capabilities.registry import CapabilityDeps, CapabilityRegistry, build_
 from app.platform.config import Settings, load_settings
 from app.prompts.registry import InMemoryPromptRegistry
 from app.prompts.seed import seed_and_activate_prompts
-from app.storage.local_assets import LocalAssetStore
-from app.storage.memory import InMemoryArtifactRepository
 from app.storage.memory_governance import InMemoryAuditLog, InMemoryIdempotencyStore
 from app.storage.memory_lineage import InMemoryLineage
+from app.storage.sqlite_dev import PersistentLocalAssetStore, SQLiteArtifactRepository
 
 
 @dataclass(frozen=True)
@@ -36,8 +35,8 @@ class DevContainer:
 
     settings: Settings
     capabilities: CapabilityRegistry
-    artifacts: InMemoryArtifactRepository
-    assets: LocalAssetStore
+    artifacts: SQLiteArtifactRepository
+    assets: PersistentLocalAssetStore
     lineage: InMemoryLineage
     idempotency: InMemoryIdempotencyStore
     audit: InMemoryAuditLog
@@ -53,9 +52,14 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
             "生产需要 PostgreSQL 与对象存储实现（计划 T1-1/T1-2 的持久化侧尚未落地）。"
         )
 
+    # 本地开发仍使用文件系统媒体，但 artifact/asset metadata 必须持久化，
+    # 否则重启后历史 preprocess/shot-script 看得见却不能被下游选择。
+    # /Volumes/123 是 exFAT：适合存大媒体，不适合 SQLite 的锁/日志文件。
+    # 状态库放本机 APFS，媒体仍在项目 .local_assets，重启后以 metadata index 重新关联。
+    state_dir = Path.home() / ".local" / "share" / "video-factory"
+    artifacts = SQLiteArtifactRepository(state_dir / "artifacts.sqlite3")
+    assets = PersistentLocalAssetStore(asset_root, state_dir / "assets.json")
     lineage = InMemoryLineage()
-    artifacts = InMemoryArtifactRepository(lineage=lineage)
-    assets = LocalAssetStore(asset_root)
     audit = InMemoryAuditLog()
     media = FfmpegMediaTool()
 

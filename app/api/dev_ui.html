@@ -273,6 +273,12 @@
       <form id="form3">
         <div class="row">
           <div class="field">
+            <label>选择预处理结果</label>
+            <select name="selected_preprocess_ref" id="preprocess-result-select">
+              <option value="">当前步骤2结果</option>
+            </select>
+          </div>
+          <div class="field">
             <label>视觉模型</label>
             <select name="vision_model" id="vision-model-select">
               <option value="">加载模型中...</option>
@@ -292,6 +298,12 @@
       <h2>营销分析：提取营销口径</h2>
       <form id="form4">
         <div class="row">
+          <div class="field">
+            <label>选择视频理解结果</label>
+            <select name="selected-shot-script-ref" id="video-understand-result-select">
+              <option value="">当前步骤3结果</option>
+            </select>
+          </div>
           <div class="field">
             <label>文本模型</label>
             <select name="text_model" id="text-model-select">
@@ -601,6 +613,7 @@ $('form2').addEventListener('submit', async (e) => {
     }
     state.analysis_id = data.analysis_id;
     state.preprocess = data.preprocess;
+    state.transcript = data.transcript;
     state.shot_script = data.shot_script;
     markStepDone(2);
     renderStep2Result(data);
@@ -691,8 +704,17 @@ $('form3').addEventListener('submit', async (e) => {
   btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
 
   const fd = new FormData(e.target);
-  fd.append('preprocess_ref', state.preprocess.ref);
-  fd.append('analysis_id', state.analysis_id || '');
+  const selected = $('preprocess-result-select').value;
+  if (selected) {
+    const candidate = JSON.parse(selected);
+    fd.append('preprocess_ref', candidate.preprocess_ref);
+    fd.append('transcript_ref', candidate.transcript_ref || '');
+    fd.append('analysis_id', candidate.analysis_id);
+  } else {
+    fd.append('preprocess_ref', state.preprocess.ref);
+    fd.append('analysis_id', state.analysis_id || '');
+    fd.append('transcript_ref', state.transcript?.ref || '');
+  }
 
   try {
     const resp = await fetch('/dev/step3/video_understand', { method: 'POST', body: fd });
@@ -752,8 +774,15 @@ $('form4').addEventListener('submit', async (e) => {
   btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
 
   const fd = new FormData(e.target);
-  fd.append('shot_script_ref', state.video_understand.ref);
-  fd.append('analysis_id', state.analysis_id || '');
+  const selected = $('video-understand-result-select').value;
+  if (selected) {
+    const candidate = JSON.parse(selected);
+    fd.append('shot_script_ref', candidate.shot_script_ref);
+    fd.append('analysis_id', candidate.analysis_id);
+  } else {
+    fd.append('shot_script_ref', state.video_understand.ref);
+    fd.append('analysis_id', state.analysis_id || '');
+  }
 
   try {
     const resp = await fetch('/dev/step4/marketing_analysis', { method: 'POST', body: fd });
@@ -817,6 +846,24 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+async function loadReusableResultSelectors() {
+  try {
+    const [preResp, vuResp] = await Promise.all([
+      fetch('/dev/preprocess-results'), fetch('/dev/video-understand-results')
+    ]);
+    const preprocesses = await preResp.json();
+    const understood = await vuResp.json();
+    $('preprocess-result-select').innerHTML = '<option value="">当前步骤2结果</option>' + preprocesses.map(r =>
+      `<option value='${JSON.stringify(r)}' ${r.available ? '' : 'disabled'}>${r.video_name} · ${r.shot_count}镜头 · ${r.available ? '可用' : '旧结果不可用'} · ${r.created_at}</option>`
+    ).join('');
+    $('video-understand-result-select').innerHTML = '<option value="">当前步骤3结果</option>' + understood.map(r =>
+      `<option value='${JSON.stringify(r)}' ${r.available ? '' : 'disabled'}>${r.video_name} · 台词=${r.has_transcript ? '有' : '无'} · 画面=${r.visual_coverage}镜头 · ${r.available ? '可用' : '旧结果不可用'}</option>`
+    ).join('');
+  } catch (err) {
+    console.warn('加载可复用结果失败', err);
+  }
+}
+
 async function loadModelSelectors() {
   try {
     const resp = await fetch('/dev/models');
@@ -842,6 +889,7 @@ function populateModelSelect(selectId, models, preferred) {
 document.addEventListener('DOMContentLoaded', () => {
   loadAnalysisHistory();
   loadModelSelectors();
+  loadReusableResultSelectors();
 });
 </script>
 </body>
