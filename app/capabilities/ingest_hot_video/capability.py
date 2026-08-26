@@ -33,6 +33,7 @@ class IngestHotVideoParameters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     file_path: str = Field(min_length=1)
+    original_filename: str = Field(min_length=1, max_length=255)
     source_platform: SourcePlatform
     rights_status: RightsStatus
     registered_by: str = Field(min_length=1, max_length=64)
@@ -100,6 +101,7 @@ class IngestHotVideoCapability(Capability[IngestHotVideoParameters]):
             source_url=params.source_url,
             author=params.author,
             asset_id=asset.id,
+            original_filename=params.original_filename,
             metrics_snapshot=params.metrics_snapshot,
             tags=params.tags,
             rights_status=params.rights_status,

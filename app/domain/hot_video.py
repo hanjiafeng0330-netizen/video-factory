@@ -60,6 +60,7 @@ class HotVideoBody(BaseModel):
     author: str | None = None
     published_at: datetime | None = None
     asset_id: str = Field(min_length=1, max_length=64)
+    original_filename: str = Field(default="未记录文件名", min_length=1, max_length=255)
     metrics_snapshot: MetricsSnapshot | None = None
     tags: tuple[str, ...] = ()
     rights_status: RightsStatus

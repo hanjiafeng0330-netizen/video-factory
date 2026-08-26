@@ -117,6 +117,7 @@ async def upload_hot_video_to_library(
             CapabilityRequest(
                 parameters={
                     "file_path": str(target),
+                    "original_filename": Path(file.filename or "upload.mp4").name,
                     "source_platform": source_platform,
                     "rights_status": rights_status,
                     "registered_by": registered_by,
@@ -168,6 +169,10 @@ async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
                 "ref": ref,
                 "logical_id": version.id,
                 "version": version.version,
+                "original_filename": body.get("original_filename", version.id),
+                "mime_type": container.assets.get(str(body.get("asset_id"))).mime_type
+                if body.get("asset_id")
+                else "video/mp4",
                 "created_at": version.created_at.isoformat(),
                 "source_platform": body.get("source_platform", ""),
                 "author": body.get("author"),
@@ -334,6 +339,7 @@ async def step1_upload(
             CapabilityRequest(
                 parameters={
                     "file_path": str(target),
+                    "original_filename": Path(file.filename or "upload.mp4").name,
                     "source_platform": source_platform,
                     "rights_status": rights_status,
                     "registered_by": registered_by,
