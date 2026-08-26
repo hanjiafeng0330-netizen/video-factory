@@ -699,12 +699,16 @@ function renderShotScript(ss, containerId = 'shotScript') {
 // 步骤3：视频理解
 $('form3').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!state.preprocess) { alert('请先完成步骤2'); return; }
+  const selected = $('preprocess-result-select').value;
+  // 历史选择和当前步骤2结果是同等有效的输入，不能先要求当前 state 存在。
+  if (!selected && !state.preprocess) {
+    alert('请选择一个已预处理的结果，或先完成步骤2');
+    return;
+  }
   const btn = $('btn3');
   btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
 
   const fd = new FormData(e.target);
-  const selected = $('preprocess-result-select').value;
   if (selected) {
     const candidate = JSON.parse(selected);
     fd.append('preprocess_ref', candidate.preprocess_ref);
@@ -769,12 +773,16 @@ function renderStep3Result(d) {
 // 步骤4：营销分析
 $('form4').addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!state.video_understand) { alert('请先完成步骤3视频理解'); return; }
+  const selected = $('video-understand-result-select').value;
+  // 历史视频理解结果和当前步骤3结果是同等有效的输入。
+  if (!selected && !state.video_understand) {
+    alert('请选择一个已完成视频理解的结果，或先完成步骤3');
+    return;
+  }
   const btn = $('btn4');
   btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
 
   const fd = new FormData(e.target);
-  const selected = $('video-understand-result-select').value;
   if (selected) {
     const candidate = JSON.parse(selected);
     fd.append('shot_script_ref', candidate.shot_script_ref);

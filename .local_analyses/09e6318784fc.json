@@ -1,0 +1,1003 @@
+{
+  "analysis_id": "09e6318784fc",
+  "created_at": "2026-08-26T17:01:20.168551",
+  "video_name": "hv_b7ed697f0cd6807f",
+  "preprocess": {
+    "ref": "preprocess_result:pp_hv_b7ed697f0cd6807f@v1",
+    "metadata": {
+      "duration_ms": 32252,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30.0,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "has_audio": true
+    },
+    "shots": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 833
+      },
+      {
+        "index": 1,
+        "start_ms": 833,
+        "end_ms": 1733
+      },
+      {
+        "index": 2,
+        "start_ms": 1733,
+        "end_ms": 3133
+      },
+      {
+        "index": 3,
+        "start_ms": 3133,
+        "end_ms": 7166
+      },
+      {
+        "index": 4,
+        "start_ms": 7166,
+        "end_ms": 9266
+      },
+      {
+        "index": 5,
+        "start_ms": 9266,
+        "end_ms": 9933
+      },
+      {
+        "index": 6,
+        "start_ms": 9933,
+        "end_ms": 10500
+      },
+      {
+        "index": 7,
+        "start_ms": 10500,
+        "end_ms": 11900
+      },
+      {
+        "index": 8,
+        "start_ms": 11900,
+        "end_ms": 12866
+      },
+      {
+        "index": 9,
+        "start_ms": 12866,
+        "end_ms": 16333
+      },
+      {
+        "index": 10,
+        "start_ms": 16333,
+        "end_ms": 18366
+      },
+      {
+        "index": 11,
+        "start_ms": 18366,
+        "end_ms": 19800
+      },
+      {
+        "index": 12,
+        "start_ms": 19800,
+        "end_ms": 20266
+      },
+      {
+        "index": 13,
+        "start_ms": 20266,
+        "end_ms": 22000
+      },
+      {
+        "index": 14,
+        "start_ms": 22000,
+        "end_ms": 24400
+      },
+      {
+        "index": 15,
+        "start_ms": 24400,
+        "end_ms": 25166
+      },
+      {
+        "index": 16,
+        "start_ms": 25166,
+        "end_ms": 26766
+      },
+      {
+        "index": 17,
+        "start_ms": 26766,
+        "end_ms": 27566
+      },
+      {
+        "index": 18,
+        "start_ms": 27566,
+        "end_ms": 28500
+      },
+      {
+        "index": 19,
+        "start_ms": 28500,
+        "end_ms": 28966
+      },
+      {
+        "index": 20,
+        "start_ms": 28966,
+        "end_ms": 29600
+      },
+      {
+        "index": 21,
+        "start_ms": 29600,
+        "end_ms": 30266
+      },
+      {
+        "index": 22,
+        "start_ms": 30266,
+        "end_ms": 32252
+      }
+    ],
+    "audio_asset_id": "asset_ac8c63223f744ced",
+    "keyframes": [
+      [
+        "asset_99ee00ee47354f0a",
+        "asset_b2107e7c281c4bc5",
+        "asset_768cb3826bc64539"
+      ],
+      [
+        "asset_a758253eec3d453a",
+        "asset_b14ceaf20f984d20",
+        "asset_0ca8319a9a3f407a"
+      ],
+      [
+        "asset_a6c38b6d203b4d67",
+        "asset_93bd42a9f8d94e01",
+        "asset_f662887304ab46ab"
+      ],
+      [
+        "asset_43b6cf901db54b05",
+        "asset_5dae517d12864e1c",
+        "asset_b42e5932bb2843a4"
+      ],
+      [
+        "asset_8a84a5b8b6f146e1",
+        "asset_1278ed034dcd4e6f",
+        "asset_c7385517e13444ec"
+      ],
+      [
+        "asset_5742285b2b184428",
+        "asset_9c0f042de6a0463d",
+        "asset_9b621fd500804224"
+      ],
+      [
+        "asset_400fd412eed94f8b",
+        "asset_d7776b8cecd14dfd",
+        "asset_c51608bce9be44db"
+      ],
+      [
+        "asset_f31c9a334cda4fd9",
+        "asset_5cdd90d39c284a9e",
+        "asset_cc4eeddbe53e40a6"
+      ],
+      [
+        "asset_111adb27a0b441df",
+        "asset_19fdfaa9fe224022",
+        "asset_30bfaefe2f7943e6"
+      ],
+      [
+        "asset_f4857fa9322e4c89",
+        "asset_77ec5290d97e4add",
+        "asset_b6dc6c153fb5490a"
+      ],
+      [
+        "asset_67177890950e49dd",
+        "asset_b552d12adb294e55",
+        "asset_421e9007baf847c1"
+      ],
+      [
+        "asset_3c8166fbee824a9a",
+        "asset_1512802d2c5345d9",
+        "asset_e8e1954820ca488c"
+      ],
+      [
+        "asset_408007d018b24e38",
+        "asset_debcb3b805b348c3",
+        "asset_0ebcf90cae6044ab"
+      ],
+      [
+        "asset_9eebb788a273454e",
+        "asset_61ad7e1551e04cf9",
+        "asset_dd7d382919f14a09"
+      ],
+      [
+        "asset_00eb01d95c724b2a",
+        "asset_79b069bf52764e11",
+        "asset_dc12fc76c3a14f73"
+      ],
+      [
+        "asset_c727147687b4421d",
+        "asset_ea341e23f12c4023",
+        "asset_575b6946bc13411b"
+      ],
+      [
+        "asset_129ce4f01c2b4c5b",
+        "asset_277598f7afbe4349",
+        "asset_3e49795d36ea4aac"
+      ],
+      [
+        "asset_a10d9c1662c0432e",
+        "asset_9abd45ff26754b29",
+        "asset_9c616d94fce84341"
+      ],
+      [
+        "asset_ce75b1fe72094360",
+        "asset_fdc3ec28a1ec40eb",
+        "asset_0a2a0486361a41e7"
+      ],
+      [
+        "asset_8374ac7b6637498d",
+        "asset_21a0a5cafb8f4f02",
+        "asset_09a9313465ec432a"
+      ],
+      [
+        "asset_9e8e5939b66640b9",
+        "asset_9c499e647a5541ae",
+        "asset_b46d36fe3cae497e"
+      ],
+      [
+        "asset_d21e5a8b12234368",
+        "asset_6a186b55f630420b",
+        "asset_c3edd4ab76664ce9"
+      ],
+      [
+        "asset_811beeff2b244002",
+        "asset_2fb49c19d14744ca",
+        "asset_7d3b8d00e9e54907"
+      ]
+    ],
+    "keyframe_timestamps": [
+      [
+        138,
+        416,
+        694
+      ],
+      [
+        983,
+        1283,
+        1583
+      ],
+      [
+        1966,
+        2433,
+        2899
+      ],
+      [
+        3805,
+        5149,
+        6493
+      ],
+      [
+        7516,
+        8216,
+        8916
+      ],
+      [
+        9377,
+        9599,
+        9821
+      ],
+      [
+        10027,
+        10216,
+        10405
+      ],
+      [
+        10733,
+        11200,
+        11666
+      ],
+      [
+        12061,
+        12383,
+        12705
+      ],
+      [
+        13443,
+        14599,
+        15755
+      ],
+      [
+        16671,
+        17349,
+        18027
+      ],
+      [
+        18605,
+        19083,
+        19561
+      ],
+      [
+        19877,
+        20033,
+        20188
+      ],
+      [
+        20555,
+        21133,
+        21711
+      ],
+      [
+        22400,
+        23200,
+        24000
+      ],
+      [
+        24527,
+        24783,
+        25038
+      ],
+      [
+        25432,
+        25966,
+        26499
+      ],
+      [
+        26899,
+        27166,
+        27432
+      ],
+      [
+        27721,
+        28033,
+        28344
+      ],
+      [
+        28577,
+        28733,
+        28888
+      ],
+      [
+        29071,
+        29283,
+        29494
+      ],
+      [
+        29711,
+        29933,
+        30155
+      ],
+      [
+        30597,
+        31259,
+        31921
+      ]
+    ],
+    "frames_per_shot": 3,
+    "truncated_shots": false,
+    "notes": [
+      "1080x1920 9:16 32252ms，23 个镜头 × 3 帧/镜头"
+    ]
+  },
+  "transcript": {
+    "ref": "transcript:tr_pp_hv_b7ed697f0cd6807f@v1",
+    "error": null,
+    "notes": [
+      "faster-whisper:small+t2s 识别语言 zh，21 句 / 213 字"
+    ],
+    "language": "zh",
+    "model": "faster-whisper:small+t2s",
+    "line_count": 21
+  },
+  "shot_script": {
+    "has_transcript": true,
+    "speech_ratio": 0.6707491008309562,
+    "silent_shot_count": 8,
+    "frames_per_shot": 3,
+    "entries": [
+      {
+        "index": 0,
+        "start_ms": 0,
+        "end_ms": 833,
+        "duration_ms": 833,
+        "keyframe_asset_ids": [
+          "asset_99ee00ee47354f0a",
+          "asset_b2107e7c281c4bc5",
+          "asset_768cb3826bc64539"
+        ],
+        "keyframe_at_ms": [
+          138,
+          416,
+          694
+        ],
+        "visual_description": "一位使用动漫滤镜的女性盘腿坐在室内，先展示产品包装，随后移开包装，双手展示一个白色儿童智能写字板。 | 动作：人物将印有产品图的包装板移向右侧，露出并双手举起白色的智能写字板实物。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 1,
+        "start_ms": 833,
+        "end_ms": 1733,
+        "duration_ms": 900,
+        "keyframe_asset_ids": [
+          "asset_a758253eec3d453a",
+          "asset_b14ceaf20f984d20",
+          "asset_0ca8319a9a3f407a"
+        ],
+        "keyframe_at_ms": [
+          983,
+          1283,
+          1583
+        ],
+        "visual_description": "画面展示了桌上的儿童视频学练机实物及后方包装盒，一只手扶着机器左下角边缘。 | 动作：手扶着机器左下角边缘，随后手指略微向下移动松开。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "助宗给孩子入了这个全能学链接",
+            "start_ms": 0,
+            "end_ms": 1800,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "start_ms": 1733,
+        "end_ms": 3133,
+        "duration_ms": 1400,
+        "keyframe_asset_ids": [
+          "asset_a6c38b6d203b4d67",
+          "asset_93bd42a9f8d94e01",
+          "asset_f662887304ab46ab"
+        ],
+        "keyframe_at_ms": [
+          1966,
+          2433,
+          2899
+        ],
+        "visual_description": "特写镜头展示手指按压白色智能绘画设备按钮，设备屏幕上的挖掘机图案从线稿逐渐自动填色，下方画板已有对应线条画。 | 动作：手指按住橙色按钮不动，屏幕内挖掘机图案逐步完成填色（车身和履带变黄）。",
+        "speech_ratio": 0.8571428571428571,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "简直就是解放双手",
+            "start_ms": 1800,
+            "end_ms": 3000,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "start_ms": 3133,
+        "end_ms": 7166,
+        "duration_ms": 4033,
+        "keyframe_asset_ids": [
+          "asset_43b6cf901db54b05",
+          "asset_5dae517d12864e1c",
+          "asset_b42e5932bb2843a4"
+        ],
+        "keyframe_at_ms": [
+          3805,
+          5149,
+          6493
+        ],
+        "visual_description": "画面展示一人手持画笔，在置于木架上的白色液晶画板上，跟随顶部小屏幕教程绘制鲸鱼图案。 | 动作：手持画笔先在鲸鱼腹部画纹路，随后移至头顶画喷水线条。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "它这可不是普通的夜间小画吧",
+            "start_ms": 3000,
+            "end_ms": 4800,
+            "spans_shot_boundary": true
+          },
+          {
+            "text": "里面是自带美术起研的",
+            "start_ms": 4800,
+            "end_ms": 6200,
+            "spans_shot_boundary": false
+          },
+          {
+            "text": "一个有几百种的视频叫窗",
+            "start_ms": 6200,
+            "end_ms": 7800,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "start_ms": 7166,
+        "end_ms": 9266,
+        "duration_ms": 2100,
+        "keyframe_asset_ids": [
+          "asset_8a84a5b8b6f146e1",
+          "asset_1278ed034dcd4e6f",
+          "asset_c7385517e13444ec"
+        ],
+        "keyframe_at_ms": [
+          7516,
+          8216,
+          8916
+        ],
+        "visual_description": "在小米汽车驾驶座内，一人手持白色电子画板，参照小屏幕图案绘制绿色饼干及文字，最后停笔展示。 | 动作：手部动作从在画板上描绘饼干细节变为停笔并张开手掌展示画作",
+        "speech_ratio": 0.6980952380952381,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "从植物 动物 再到人物 建筑",
+            "start_ms": 7800,
+            "end_ms": 9800,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "start_ms": 9266,
+        "end_ms": 9933,
+        "duration_ms": 667,
+        "keyframe_asset_ids": [
+          "asset_5742285b2b184428",
+          "asset_9c0f042de6a0463d",
+          "asset_9b621fd500804224"
+        ],
+        "keyframe_at_ms": [
+          9377,
+          9599,
+          9821
+        ],
+        "visual_description": "俯拍视角下，一只手正握着白色笔在液晶手写板上画出一个蓝色的圆圈，背景有卡通玩偶和书籍。 | 动作：手持白色笔在黑色书写板上画出一个蓝色的圆弧，动作连贯，逐渐闭合成圆。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 6,
+        "start_ms": 9933,
+        "end_ms": 10500,
+        "duration_ms": 567,
+        "keyframe_asset_ids": [
+          "asset_400fd412eed94f8b",
+          "asset_d7776b8cecd14dfd",
+          "asset_c51608bce9be44db"
+        ],
+        "keyframe_at_ms": [
+          10027,
+          10216,
+          10405
+        ],
+        "visual_description": "俯拍视角下，一只手握着白笔在液晶手写板上描画坦克图案，屏幕上方显示参考图，底部有字幕。 | 动作：手持笔在屏幕上移动，描绘坦克车身的线条。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "九种分类",
+            "start_ms": 9800,
+            "end_ms": 10600,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 7,
+        "start_ms": 10500,
+        "end_ms": 11900,
+        "duration_ms": 1400,
+        "keyframe_asset_ids": [
+          "asset_f31c9a334cda4fd9",
+          "asset_5cdd90d39c284a9e",
+          "asset_cc4eeddbe53e40a6"
+        ],
+        "keyframe_at_ms": [
+          10733,
+          11200,
+          11666
+        ],
+        "visual_description": "一只手握着白笔在电子画板上临摹挖掘机，画板上方屏幕显示参考图，下方出现教学字幕。 | 动作：手部握笔在画板左侧区域移动，画出挖掘机机械臂的线条。",
+        "speech_ratio": 0.9285714285714286,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "从零开始",
+            "start_ms": 10600,
+            "end_ms": 11400,
+            "spans_shot_boundary": false
+          },
+          {
+            "text": "一步不教孩子",
+            "start_ms": 11400,
+            "end_ms": 12400,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "start_ms": 11900,
+        "end_ms": 12866,
+        "duration_ms": 966,
+        "keyframe_asset_ids": [
+          "asset_111adb27a0b441df",
+          "asset_19fdfaa9fe224022",
+          "asset_30bfaefe2f7943e6"
+        ],
+        "keyframe_at_ms": [
+          12061,
+          12383,
+          12705
+        ],
+        "visual_description": "穿着白色毛衣的人手持白笔在儿童液晶画板上描绘卡通土拨鼠，背景有电视和盲盒。 | 动作：右手持笔在画板上描绘线条，随后移开手展示画作",
+        "speech_ratio": 0.4824016563146998,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "挖掘机怎么画",
+            "start_ms": 12400,
+            "end_ms": 13200,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 9,
+        "start_ms": 12866,
+        "end_ms": 16333,
+        "duration_ms": 3467,
+        "keyframe_asset_ids": [
+          "asset_f4857fa9322e4c89",
+          "asset_77ec5290d97e4add",
+          "asset_b6dc6c153fb5490a"
+        ],
+        "keyframe_at_ms": [
+          13443,
+          14599,
+          15755
+        ],
+        "visual_description": "车内视角展示一款白色儿童画板学习机，屏幕显示“学古诗”分级界面，手握持设备右侧。 | 动作：手握持设备右侧边缘，动作基本静止，无明显大幅移动。",
+        "speech_ratio": 0.8076146524372656,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "吐波手又怎么画的",
+            "start_ms": 13200,
+            "end_ms": 14200,
+            "spans_shot_boundary": false
+          },
+          {
+            "text": "这不比在外面画的大几百的美术",
+            "start_ms": 14200,
+            "end_ms": 16000,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 10,
+        "start_ms": 16333,
+        "end_ms": 18366,
+        "duration_ms": 2033,
+        "keyframe_asset_ids": [
+          "asset_67177890950e49dd",
+          "asset_b552d12adb294e55",
+          "asset_421e9007baf847c1"
+        ],
+        "keyframe_at_ms": [
+          16671,
+          17349,
+          18027
+        ],
+        "visual_description": "车内视角，一人双手持白色学习写字板，右手食指按压右上角按钮，屏幕显示拼音教学内容，黑板区写有拼音和汉字。 | 动作：右手食指按压设备按钮，动作幅度微小，基本保持静止。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "可抢太多了",
+            "start_ms": 16000,
+            "end_ms": 16800,
+            "spans_shot_boundary": true
+          },
+          {
+            "text": "它还可以学拼音 学汉字 学古识",
+            "start_ms": 16800,
+            "end_ms": 19200,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 11,
+        "start_ms": 18366,
+        "end_ms": 19800,
+        "duration_ms": 1434,
+        "keyframe_asset_ids": [
+          "asset_3c8166fbee824a9a",
+          "asset_1512802d2c5345d9",
+          "asset_e8e1954820ca488c"
+        ],
+        "keyframe_at_ms": [
+          18605,
+          19083,
+          19561
+        ],
+        "visual_description": "手持白色学习答题器展示答题过程，屏幕显示数学题“4-0=?”，手指按键选择D4后屏幕出现点赞动画。 | 动作：手指按压右侧绿色按钮，屏幕选项框从C2变为D4，随后显示点赞图标。",
+        "speech_ratio": 0.41841004184100417,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "学英语 学儿哥等等",
+            "start_ms": 19200,
+            "end_ms": 20600,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 12,
+        "start_ms": 19800,
+        "end_ms": 20266,
+        "duration_ms": 466,
+        "keyframe_asset_ids": [
+          "asset_408007d018b24e38",
+          "asset_debcb3b805b348c3",
+          "asset_0ebcf90cae6044ab"
+        ],
+        "keyframe_at_ms": [
+          19877,
+          20033,
+          20188
+        ],
+        "visual_description": "画面特写展示白色手持答题设备，屏幕显示数学题“2+0=?”，手指按下按钮后屏幕出现点赞动画，底部有字幕。 | 动作：手指按下设备右侧绿色按钮，屏幕随之显示点赞与星星的反馈动画。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 13,
+        "start_ms": 20266,
+        "end_ms": 22000,
+        "duration_ms": 1734,
+        "keyframe_asset_ids": [
+          "asset_9eebb788a273454e",
+          "asset_61ad7e1551e04cf9",
+          "asset_dd7d382919f14a09"
+        ],
+        "keyframe_at_ms": [
+          20555,
+          21133,
+          21711
+        ],
+        "visual_description": "画面展示一人双手操作白色液晶画板，右手持笔跟随顶部小屏幕提示，在黑板上描画出一只彩色蝴蝶。 | 动作：右手持笔在画板上描画蝴蝶纹路，随后移开画笔展示成品。",
+        "speech_ratio": 0.8073817762399077,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "一共有12个系统支持过",
+            "start_ms": 20600,
+            "end_ms": 22000,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "start_ms": 22000,
+        "end_ms": 24400,
+        "duration_ms": 2400,
+        "keyframe_asset_ids": [
+          "asset_00eb01d95c724b2a",
+          "asset_79b069bf52764e11",
+          "asset_dc12fc76c3a14f73"
+        ],
+        "keyframe_at_ms": [
+          22400,
+          23200,
+          24000
+        ],
+        "visual_description": "室内近景，一人正手持触控笔在白色电子画板上书写英文单词，画板上方小屏幕显示单词内容，底部有字幕。 | 动作：手持白色触控笔在画板黑色区域书写，笔迹从单字母逐渐写成单词“big”。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "都是孩子喜欢的",
+            "start_ms": 22000,
+            "end_ms": 23000,
+            "spans_shot_boundary": false
+          },
+          {
+            "text": "和日后课本里要学的知识",
+            "start_ms": 23000,
+            "end_ms": 24400,
+            "spans_shot_boundary": false
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "start_ms": 24400,
+        "end_ms": 25166,
+        "duration_ms": 766,
+        "keyframe_asset_ids": [
+          "asset_c727147687b4421d",
+          "asset_ea341e23f12c4023",
+          "asset_575b6946bc13411b"
+        ],
+        "keyframe_at_ms": [
+          24527,
+          24783,
+          25038
+        ],
+        "visual_description": "室内桌面上，一只手在白色儿童液晶画板上描绘闹钟图案，画板上方小屏显示参考图，下方字幕提示“可以重复写”。 | 动作：右手持笔在画板上描画闹钟轮廓，随后手移开画面，左手始终扶着木质支架。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 16,
+        "start_ms": 25166,
+        "end_ms": 26766,
+        "duration_ms": 1600,
+        "keyframe_asset_ids": [
+          "asset_129ce4f01c2b4c5b",
+          "asset_277598f7afbe4349",
+          "asset_3e49795d36ea4aac"
+        ],
+        "keyframe_at_ms": [
+          25432,
+          25966,
+          26499
+        ],
+        "visual_description": "室内场景中，一名身穿浅蓝衬衫的长发人物正手持白色画笔，在置于木质支架上的儿童液晶画板上描绘火山图案，背景可见蝴蝶装饰画与玩具。 | 动作：手持画笔在画板火山图案的底部从左向右描绘线条。",
+        "speech_ratio": 0.64625,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "我儿子现在已经会被小学的古识了",
+            "start_ms": 24400,
+            "end_ms": 26200,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "start_ms": 26766,
+        "end_ms": 27566,
+        "duration_ms": 800,
+        "keyframe_asset_ids": [
+          "asset_a10d9c1662c0432e",
+          "asset_9abd45ff26754b29",
+          "asset_9c616d94fce84341"
+        ],
+        "keyframe_at_ms": [
+          26899,
+          27166,
+          27432
+        ],
+        "visual_description": "一只手握着白色画笔在液晶画板边缘操作，画板屏幕布满彩色涂鸦，背景可见卡通玩偶与书籍。 | 动作：手持画笔在画板左上角区域轻微点触或悬停，整体动作幅度极小，画面相对静止。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "就你不管拿它来当个花花起研",
+            "start_ms": 26200,
+            "end_ms": 28000,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 18,
+        "start_ms": 27566,
+        "end_ms": 28500,
+        "duration_ms": 934,
+        "keyframe_asset_ids": [
+          "asset_ce75b1fe72094360",
+          "asset_fdc3ec28a1ec40eb",
+          "asset_0a2a0486361a41e7"
+        ],
+        "keyframe_at_ms": [
+          27721,
+          28033,
+          28344
+        ],
+        "visual_description": "镜头展示白色学习设备屏幕内容从英语释义切换至儿歌画面，手指按压按钮进行操作。 | 动作：屏幕画面从文字释义切换为儿歌插图，手指按压设备右侧按钮。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 19,
+        "start_ms": 28500,
+        "end_ms": 28966,
+        "duration_ms": 466,
+        "keyframe_asset_ids": [
+          "asset_8374ac7b6637498d",
+          "asset_21a0a5cafb8f4f02",
+          "asset_09a9313465ec432a"
+        ],
+        "keyframe_at_ms": [
+          28577,
+          28733,
+          28888
+        ],
+        "visual_description": "画面展示“12大学习知识库”功能图表，涵盖百科、儿歌等12个板块，下方有人手持白色学习设备。 | 动作：画面基本静止，底部字幕显示“一共有12个系统知识库”。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 20,
+        "start_ms": 28966,
+        "end_ms": 29600,
+        "duration_ms": 634,
+        "keyframe_asset_ids": [
+          "asset_9e8e5939b66640b9",
+          "asset_9c499e647a5541ae",
+          "asset_b46d36fe3cae497e"
+        ],
+        "keyframe_at_ms": [
+          29071,
+          29283,
+          29494
+        ],
+        "visual_description": "特写镜头展示一只手握持白色儿童早教设备，屏幕显示多个学习应用图标，画面配有字幕说明功能。 | 动作：画面主体基本静止，字幕从“一共有12个系统知识库”变为“都是孩子喜欢的”，左上角出现“百科知识”特效字。",
+        "speech_ratio": 1.0,
+        "is_silent": false,
+        "lines": [
+          {
+            "text": "或者是早教早练傻的都特别地使用",
+            "start_ms": 28000,
+            "end_ms": 30200,
+            "spans_shot_boundary": true
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "start_ms": 29600,
+        "end_ms": 30266,
+        "duration_ms": 666,
+        "keyframe_asset_ids": [
+          "asset_d21e5a8b12234368",
+          "asset_6a186b55f630420b",
+          "asset_c3edd4ab76664ce9"
+        ],
+        "keyframe_at_ms": [
+          29711,
+          29933,
+          30155
+        ],
+        "visual_description": "电子屏幕特写，展示百科知识卡片，内容从亚马逊平原切换为俄国鲟鱼，底部配有解说字幕。 | 动作：屏幕显示的百科卡片内容发生切换，由平原风景变为鱼类图片。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      },
+      {
+        "index": 22,
+        "start_ms": 30266,
+        "end_ms": 32252,
+        "duration_ms": 1986,
+        "keyframe_asset_ids": [
+          "asset_811beeff2b244002",
+          "asset_2fb49c19d14744ca",
+          "asset_7d3b8d00e9e54907"
+        ],
+        "keyframe_at_ms": [
+          30597,
+          31259,
+          31921
+        ],
+        "visual_description": "车内近景，展示一款白色儿童画板设备，背景为车载大屏显示车辆模型，手持触控笔进行互动。 | 动作：手持白色触控笔从悬停变为放下，手扶住画板右侧边缘。",
+        "speech_ratio": 0.0,
+        "is_silent": true,
+        "lines": []
+      }
+    ],
+    "rendered": "总时长 32252ms，共 23 个镜头，语音占比 67%\n[镜头0] 0-833ms（833ms）\n  画面：一位使用动漫滤镜的女性盘腿坐在室内，先展示产品包装，随后移开包装，双手展示一个白色儿童智能写字板。 | 动作：人物将印有产品图的包装板移向右侧，露出并双手举起白色的智能写字板实物。\n  台词：（无）\n[镜头1] 833-1733ms（900ms）\n  画面：画面展示了桌上的儿童视频学练机实物及后方包装盒，一只手扶着机器左下角边缘。 | 动作：手扶着机器左下角边缘，随后手指略微向下移动松开。\n  台词：助宗给孩子入了这个全能学链接（跨镜头）\n[镜头2] 1733-3133ms（1400ms）\n  画面：特写镜头展示手指按压白色智能绘画设备按钮，设备屏幕上的挖掘机图案从线稿逐渐自动填色，下方画板已有对应线条画。 | 动作：手指按住橙色按钮不动，屏幕内挖掘机图案逐步完成填色（车身和履带变黄）。\n  台词：简直就是解放双手\n[镜头3] 3133-7166ms（4033ms）\n  画面：画面展示一人手持画笔，在置于木架上的白色液晶画板上，跟随顶部小屏幕教程绘制鲸鱼图案。 | 动作：手持画笔先在鲸鱼腹部画纹路，随后移至头顶画喷水线条。\n  台词：它这可不是普通的夜间小画吧（跨镜头）\n  台词：里面是自带美术起研的\n  台词：一个有几百种的视频叫窗（跨镜头）\n[镜头4] 7166-9266ms（2100ms）\n  画面：在小米汽车驾驶座内，一人手持白色电子画板，参照小屏幕图案绘制绿色饼干及文字，最后停笔展示。 | 动作：手部动作从在画板上描绘饼干细节变为停笔并张开手掌展示画作\n  台词：从植物 动物 再到人物 建筑（跨镜头）\n[镜头5] 9266-9933ms（667ms）\n  画面：俯拍视角下，一只手正握着白色笔在液晶手写板上画出一个蓝色的圆圈，背景有卡通玩偶和书籍。 | 动作：手持白色笔在黑色书写板上画出一个蓝色的圆弧，动作连贯，逐渐闭合成圆。\n  台词：（无）\n[镜头6] 9933-10500ms（567ms）\n  画面：俯拍视角下，一只手握着白笔在液晶手写板上描画坦克图案，屏幕上方显示参考图，底部有字幕。 | 动作：手持笔在屏幕上移动，描绘坦克车身的线条。\n  台词：九种分类（跨镜头）\n[镜头7] 10500-11900ms（1400ms）\n  画面：一只手握着白笔在电子画板上临摹挖掘机，画板上方屏幕显示参考图，下方出现教学字幕。 | 动作：手部握笔在画板左侧区域移动，画出挖掘机机械臂的线条。\n  台词：从零开始\n  台词：一步不教孩子（跨镜头）\n[镜头8] 11900-12866ms（966ms）\n  画面：穿着白色毛衣的人手持白笔在儿童液晶画板上描绘卡通土拨鼠，背景有电视和盲盒。 | 动作：右手持笔在画板上描绘线条，随后移开手展示画作\n  台词：挖掘机怎么画（跨镜头）\n[镜头9] 12866-16333ms（3467ms）\n  画面：车内视角展示一款白色儿童画板学习机，屏幕显示“学古诗”分级界面，手握持设备右侧。 | 动作：手握持设备右侧边缘，动作基本静止，无明显大幅移动。\n  台词：吐波手又怎么画的\n  台词：这不比在外面画的大几百的美术\n[镜头10] 16333-18366ms（2033ms）\n  画面：车内视角，一人双手持白色学习写字板，右手食指按压右上角按钮，屏幕显示拼音教学内容，黑板区写有拼音和汉字。 | 动作：右手食指按压设备按钮，动作幅度微小，基本保持静止。\n  台词：可抢太多了（跨镜头）\n  台词：它还可以学拼音 学汉字 学古识（跨镜头）\n[镜头11] 18366-19800ms（1434ms）\n  画面：手持白色学习答题器展示答题过程，屏幕显示数学题“4-0=?”，手指按键选择D4后屏幕出现点赞动画。 | 动作：手指按压右侧绿色按钮，屏幕选项框从C2变为D4，随后显示点赞图标。\n  台词：学英语 学儿哥等等（跨镜头）\n[镜头12] 19800-20266ms（466ms）\n  画面：画面特写展示白色手持答题设备，屏幕显示数学题“2+0=?”，手指按下按钮后屏幕出现点赞动画，底部有字幕。 | 动作：手指按下设备右侧绿色按钮，屏幕随之显示点赞与星星的反馈动画。\n  台词：（无）\n[镜头13] 20266-22000ms（1734ms）\n  画面：画面展示一人双手操作白色液晶画板，右手持笔跟随顶部小屏幕提示，在黑板上描画出一只彩色蝴蝶。 | 动作：右手持笔在画板上描画蝴蝶纹路，随后移开画笔展示成品。\n  台词：一共有12个系统支持过\n[镜头14] 22000-24400ms（2400ms）\n  画面：室内近景，一人正手持触控笔在白色电子画板上书写英文单词，画板上方小屏幕显示单词内容，底部有字幕。 | 动作：手持白色触控笔在画板黑色区域书写，笔迹从单字母逐渐写成单词“big”。\n  台词：都是孩子喜欢的\n  台词：和日后课本里要学的知识\n[镜头15] 24400-25166ms（766ms）\n  画面：室内桌面上，一只手在白色儿童液晶画板上描绘闹钟图案，画板上方小屏显示参考图，下方字幕提示“可以重复写”。 | 动作：右手持笔在画板上描画闹钟轮廓，随后手移开画面，左手始终扶着木质支架。\n  台词：（无）\n[镜头16] 25166-26766ms（1600ms）\n  画面：室内场景中，一名身穿浅蓝衬衫的长发人物正手持白色画笔，在置于木质支架上的儿童液晶画板上描绘火山图案，背景可见蝴蝶装饰画与玩具。 | 动作：手持画笔在画板火山图案的底部从左向右描绘线条。\n  台词：我儿子现在已经会被小学的古识了（跨镜头）\n[镜头17] 26766-27566ms（800ms）\n  画面：一只手握着白色画笔在液晶画板边缘操作，画板屏幕布满彩色涂鸦，背景可见卡通玩偶与书籍。 | 动作：手持画笔在画板左上角区域轻微点触或悬停，整体动作幅度极小，画面相对静止。\n  台词：就你不管拿它来当个花花起研（跨镜头）\n[镜头18] 27566-28500ms（934ms）\n  画面：镜头展示白色学习设备屏幕内容从英语释义切换至儿歌画面，手指按压按钮进行操作。 | 动作：屏幕画面从文字释义切换为儿歌插图，手指按压设备右侧按钮。\n  台词：（无）\n[镜头19] 28500-28966ms（466ms）\n  画面：画面展示“12大学习知识库”功能图表，涵盖百科、儿歌等12个板块，下方有人手持白色学习设备。 | 动作：画面基本静止，底部字幕显示“一共有12个系统知识库”。\n  台词：（无）\n[镜头20] 28966-29600ms（634ms）\n  画面：特写镜头展示一只手握持白色儿童早教设备，屏幕显示多个学习应用图标，画面配有字幕说明功能。 | 动作：画面主体基本静止，字幕从“一共有12个系统知识库”变为“都是孩子喜欢的”，左上角出现“百科知识”特效字。\n  台词：或者是早教早练傻的都特别地使用（跨镜头）\n[镜头21] 29600-30266ms（666ms）\n  画面：电子屏幕特写，展示百科知识卡片，内容从亚马逊平原切换为俄国鲟鱼，底部配有解说字幕。 | 动作：屏幕显示的百科卡片内容发生切换，由平原风景变为鱼类图片。\n  台词：（无）\n[镜头22] 30266-32252ms（1986ms）\n  画面：车内近景，展示一款白色儿童画板设备，背景为车载大屏显示车辆模型，手持触控笔进行互动。 | 动作：手持白色触控笔从悬停变为放下，手扶住画板右侧边缘。\n  台词：（无）"
+  },
+  "hot_video": {
+    "ref": "hot_video:hv_b7ed697f0cd6807f@v1"
+  },
+  "video_understand": {
+    "ref": "shot_script:ss_pp_hv_b7ed697f0cd6807f@v1",
+    "total_shots": 23,
+    "shots_with_visual_description": 23,
+    "notes": []
+  }
+}
