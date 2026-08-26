@@ -59,6 +59,8 @@ class MarketingAnalysisParameters(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_output_tokens: int = Field(default=2000, ge=500, le=8000)
+    text_model: str | None = None
+    """本次任务覆盖默认文本模型。由 API 按模型目录校验后传入。"""
 
 
 class MarketingAnalysisCapability(Capability[MarketingAnalysisParameters]):
@@ -122,7 +124,7 @@ class MarketingAnalysisCapability(Capability[MarketingAnalysisParameters]):
 
         # 调用 LLM
         response = self._llm.text(
-            model=self._text_model,
+            model=params.text_model or self._text_model,
             system=prompt.text,
             user_text="请分析以上镜头脚本的营销口径。",
             max_tokens=params.max_output_tokens,

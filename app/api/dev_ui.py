@@ -27,6 +27,7 @@ from app.domain.capability import CapabilityRequest
 from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.hot_video import SourcePlatform
 from app.domain.media import ShotList
+from app.domain.model_catalog import ModelAbility, models_with, require_ability
 from app.domain.refs import ArtifactRef
 from app.domain.shot_script import ShotScript, build_shot_script, render_for_analysis
 from app.domain.transcript import Transcript
@@ -378,12 +379,18 @@ async def step3_video_understand(
     request: Request,
     preprocess_ref: Annotated[str, Form()],
     analysis_id: Annotated[str, Form()] = "",
+    vision_model: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤3：视频理解，调用LLM分析每个镜头。"""
     container = container_of(request)
 
     # 解析引用
     pre_ref = _parse_ref(preprocess_ref)
+    selected_model = vision_model or container.settings.llm.vision_model
+    try:
+        require_ability(selected_model, ModelAbility.VISION)
+    except ValueError as exc:
+        raise CapabilityError(ErrorCode.INVALID_PARAMETERS, str(exc)) from exc
 
     # 从提示词注册表获取提示词
     shot_visual_prompt = container.prompts.resolve(
@@ -404,6 +411,7 @@ async def step3_video_understand(
     vu_result = await vu.execute(
         CapabilityRequest(
             input_refs=(pre_ref,),
+            parameters={"vision_model": selected_model},
             resolved_prompts=(shot_visual_prompt,),
             idempotency_key=f"dev-vu-{run_id}",
         )
@@ -513,12 +521,18 @@ async def step4_marketing_analysis(
     request: Request,
     shot_script_ref: Annotated[str, Form()],
     analysis_id: Annotated[str, Form()] = "",
+    text_model: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤 4：营销分析，调用 LLM 提取营销口径（钩子/痛点/卖点结构/视觉风格）。"""
     container = container_of(request)
 
-    # 解析引用
+    # 解析引用与模型能力校验
     ss_ref = _parse_ref(shot_script_ref)
+    selected_model = text_model or container.settings.llm.text_model
+    try:
+        require_ability(selected_model, ModelAbility.TEXT)
+    except ValueError as exc:
+        raise CapabilityError(ErrorCode.INVALID_PARAMETERS, str(exc)) from exc
 
     # 获取提示词
     marketing_prompt = container.prompts.resolve(
@@ -532,6 +546,7 @@ async def step4_marketing_analysis(
     ma_result = await ma.execute(
         CapabilityRequest(
             input_refs=(ss_ref,),
+            parameters={"text_model": selected_model},
             resolved_prompts=(marketing_prompt,),
             idempotency_key=f"dev-ma-{run_id}",
         )
@@ -546,6 +561,7 @@ async def step4_marketing_analysis(
         "analysis_id": analysis_id,
         "marketing_analysis": {
             "ref": str(ma_ref),
+            "model": selected_model,
             "hook": ma_body.get("hook", ""),
             "pain_points": ma_body.get("pain_points", ""),
             "selling_point_structure": ma_body.get("selling_point_structure", ""),
@@ -563,6 +579,31 @@ async def step4_marketing_analysis(
             _save_analysis(analysis_id, saved_data)
 
     return result
+
+
+# ============================================================================
+# 模型目录（步骤3/步骤4的下拉选项）
+# ============================================================================
+@router.get("/models")
+async def list_models(request: Request) -> dict[str, Any]:
+    """按能力返回可选模型，前端不展示不匹配的模型。"""
+
+    def serialize(ability: ModelAbility) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": spec.id,
+                "family": spec.family,
+                "multiplier": spec.budget_multiplier,
+                "verification": spec.vision_verification,
+                "note": spec.note,
+            }
+            for spec in models_with(ability)
+        ]
+
+    return {
+        "vision_models": serialize(ModelAbility.VISION),
+        "text_models": serialize(ModelAbility.TEXT),
+    }
 
 
 # ============================================================================

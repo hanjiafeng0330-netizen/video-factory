@@ -1,10 +1,11 @@
 """LLM 适配器（Anthropic vision）。
 
-包装 anthropic SDK，提供 vision（多图 + 文本）和 text-only 两种调用。
+包装 Anthropic SDK，提供 vision（多图 + 文本）和 text-only 两种调用。
 返回原始结构化输出，不含任何业务逻辑。
 
 错误映射遵循设计文档 10.1：
-- 4xx（参数错误、速率限制等） → 不可重试
+- 速率限制（rate limit） → 可重试
+- 月度/账户额度耗尽（quota exceeded） → 不可重试，转预算/额度处理
 - 5xx 和超时 → 可重试
 """
 
@@ -36,10 +37,7 @@ class LLMResponse:
 
 
 class LLMClient(Protocol):
-    """LLM 客户端协议。
-
-    能力模块只认这个协议，不直接 import anthropic SDK。
-    """
+    """LLM 客户端协议。"""
 
     def vision(
         self,
@@ -61,6 +59,29 @@ class LLMClient(Protocol):
     ) -> LLMResponse: ...
 
 
+def _classify_rate_limit(exc: anthropic.RateLimitError) -> CapabilityError:
+    """区分瞬时速率限制与账户额度耗尽。
+
+    两者都以 HTTP 429 返回，但处理动作完全相反：
+    - `rate_limit`：稍后重试有效；
+    - `quota_exceeded`：当前账户/模型的月度额度已耗尽，重试只会重复失败，必须切换
+      模型、补充额度或等待额度周期刷新。
+
+    把 quota_exceeded 标成 provider_rate_limited 会误导工作流无限重试，浪费队列资源，
+    也让运营以为「等一会就好」。设计文档 18 章要求成本上限和人工处理，这里必须
+    返回 BUDGET_EXCEEDED（不可重试，联系管理员）。
+    """
+    message = str(exc.message)
+    if "quota_exceeded" in message:
+        return CapabilityError(
+            ErrorCode.BUDGET_EXCEEDED,
+            "LLM 账户或模型额度已耗尽（quota_exceeded）。"
+            "请在模型配置中切换到有额度的模型，补充额度，或等待额度周期刷新。"
+            f"原始信息：{message}",
+        )
+    return CapabilityError(ErrorCode.PROVIDER_RATE_LIMITED, f"LLM 速率限制：{message}")
+
+
 class AnthropicClient:
     """Anthropic Claude 客户端实现。"""
 
@@ -80,10 +101,7 @@ class AnthropicClient:
         image_paths: tuple[Path, ...],
         max_tokens: int,
     ) -> LLMResponse:
-        """多图 + 文本的 vision 调用。
-
-        image_paths 里的每张图片都会被编码为 base64 放进消息里。
-        """
+        """多图 + 文本的 vision 调用。"""
         if not image_paths:
             raise CapabilityError(ErrorCode.INVALID_PARAMETERS, "vision 调用至少需要一张图片")
 
@@ -111,11 +129,8 @@ class AnthropicClient:
                 max_tokens=max_tokens,
             )
         except anthropic.RateLimitError as exc:
-            raise CapabilityError(
-                ErrorCode.PROVIDER_RATE_LIMITED, f"LLM 速率限制：{exc.message}"
-            ) from exc
+            raise _classify_rate_limit(exc) from exc
         except anthropic.APIStatusError as exc:
-            # 4xx 不可重试，5xx 可重试
             if exc.status_code < 500:
                 raise CapabilityError(
                     ErrorCode.PROVIDER_REJECTED_REQUEST,
@@ -156,9 +171,7 @@ class AnthropicClient:
                 max_tokens=max_tokens,
             )
         except anthropic.RateLimitError as exc:
-            raise CapabilityError(
-                ErrorCode.PROVIDER_RATE_LIMITED, f"LLM 速率限制：{exc.message}"
-            ) from exc
+            raise _classify_rate_limit(exc) from exc
         except anthropic.APIStatusError as exc:
             if exc.status_code < 500:
                 raise CapabilityError(

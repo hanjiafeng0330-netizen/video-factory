@@ -20,6 +20,7 @@ from app.domain.assets import AssetStore
 from app.domain.lineage import LineageRepository
 from app.domain.prompt_registry import PromptRegistry
 from app.domain.versioning import ArtifactRepository
+from app.platform.config import Settings
 
 
 class Container(Protocol):
@@ -39,6 +40,9 @@ class Container(Protocol):
 
     @property
     def prompts(self) -> PromptRegistry: ...
+
+    @property
+    def settings(self) -> Settings: ...
 
 
 def container_of(request: Request) -> Container:

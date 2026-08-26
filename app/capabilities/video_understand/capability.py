@@ -35,6 +35,9 @@ class VideoUnderstandParameters(BaseModel):
     max_output_tokens: int = Field(default=800, ge=100, le=4000)
     """单个镜头画面描述的最大输出 token。"""
 
+    vision_model: str | None = None
+    """本次任务覆盖默认视觉模型。由 API 按模型目录校验后传入。"""
+
 
 class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
     name: ClassVar[str] = "video_understand"
@@ -124,7 +127,7 @@ class VideoUnderstandCapability(Capability[VideoUnderstandParameters]):
 
             # 调用视觉模型
             response = self._llm.vision(
-                model=self._vision_model,
+                model=params.vision_model or self._vision_model,
                 system=shot_visual_prompt.text,
                 user_text=f"请分析镜头 {entry.index}（{entry.start_ms}ms - {entry.end_ms}ms）",
                 image_paths=tuple(image_paths),

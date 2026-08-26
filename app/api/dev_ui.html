@@ -272,10 +272,16 @@
       <h2>视频理解：LLM分析</h2>
       <form id="form3">
         <div class="row">
+          <div class="field">
+            <label>视觉模型</label>
+            <select name="vision_model" id="vision-model-select">
+              <option value="">加载模型中...</option>
+            </select>
+          </div>
           <button type="submit" id="btn3">开始分析</button>
         </div>
       </form>
-      <p class="hint">调用视觉模型分析每个镜头的画面内容，生成综合描述。</p>
+      <p class="hint">只显示支持视觉输入的模型。额度耗尽时可切换其他模型后重试。</p>
     </div>
     <div id="result3" class="hidden"></div>
   </div>
@@ -286,10 +292,16 @@
       <h2>营销分析：提取营销口径</h2>
       <form id="form4">
         <div class="row">
+          <div class="field">
+            <label>文本模型</label>
+            <select name="text_model" id="text-model-select">
+              <option value="">加载模型中...</option>
+            </select>
+          </div>
           <button type="submit" id="btn4">开始营销分析</button>
         </div>
       </form>
-      <p class="hint">基于镜头脚本提取钩子、痛点、卖点结构、视觉风格等营销维度。</p>
+      <p class="hint">只显示支持文本分析的模型。gpt-image-2 仅用于后续生图，不出现在此处。</p>
     </div>
     <div id="result4" class="hidden"></div>
   </div>
@@ -805,9 +817,31 @@ function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+async function loadModelSelectors() {
+  try {
+    const resp = await fetch('/dev/models');
+    const data = await resp.json();
+    populateModelSelect('vision-model-select', data.vision_models, 'claude-sonnet-4-6');
+    populateModelSelect('text-model-select', data.text_models, 'claude-sonnet-4-6');
+  } catch (err) {
+    $('vision-model-select').innerHTML = '<option value="">模型列表加载失败</option>';
+    $('text-model-select').innerHTML = '<option value="">模型列表加载失败</option>';
+  }
+}
+
+function populateModelSelect(selectId, models, preferred) {
+  const select = $(selectId);
+  select.innerHTML = models.map(m => {
+    const verify = m.verification === 'verified' ? '已验证' : '待验证';
+    const note = m.note ? ` · ${m.note}` : '';
+    return `<option value="${m.id}" ${m.id === preferred ? 'selected' : ''}>${m.id} · ${m.multiplier}x · ${verify}${note}</option>`;
+  }).join('');
+}
+
 // 页面加载时初始化
 document.addEventListener('DOMContentLoaded', () => {
   loadAnalysisHistory();
+  loadModelSelectors();
 });
 </script>
 </body>
