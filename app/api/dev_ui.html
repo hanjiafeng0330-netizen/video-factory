@@ -335,7 +335,16 @@
 <main>
   <div class="panel">
     <h2>热点视频库</h2>
-    <p class="hint">管理已上传视频、版本和关联的视频分析包。</p>
+    <form id="library-upload-form">
+      <div class="row">
+        <input type="file" name="file" accept="video/*" required>
+        <select name="source_platform"><option value="douyin">抖音</option><option value="other">其他</option></select>
+        <select name="rights_status"><option value="reference_only">仅参考分析</option><option value="licensed">已授权</option><option value="owned">自有素材</option></select>
+        <input name="selection_reason" value="热点视频库上传" required>
+        <button type="submit">上传入库</button>
+      </div>
+    </form>
+    <p class="hint">未开始分析的视频优先显示，同状态按上传时间倒序。</p>
   </div>
   <div id="hot-videos-list"></div>
 </main>
@@ -394,6 +403,28 @@ async function loadHotVideos() {
   }
 }
 
+function useLibraryVideo(ref) {
+  state.hot_video = { ref };
+  showPage('analysis');
+  showStep(2);
+  alert('已选择视频库中的视频，请在步骤2点击开始预处理');
+}
+
+async function uploadLibraryVideo(event) {
+  event.preventDefault();
+  const response = await fetch('/dev/hot-videos/upload', {
+    method: 'POST', body: new FormData(event.target)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    alert(`上传失败：${data.detail || JSON.stringify(data)}`);
+    return;
+  }
+  event.target.reset();
+  alert(`已入库：${data.ref}`);
+  loadHotVideos();
+}
+
 function renderHotVideos(videos) {
   if (!videos.length) {
     $('hot-videos-list').innerHTML = '<p class="hint">暂无已上传视频</p>';
@@ -410,9 +441,11 @@ function renderHotVideos(videos) {
         <dt>分析包</dt><dd>${(v.analysis_packages || []).length} 个</dd>
       </dl>
       <div style="margin-top:12px;">
+        <button class="secondary" style="padding:5px 10px;font-size:11px;" onclick="useLibraryVideo('${v.ref}')">用于预处理</button>
+        ${(v.available_actions || []).includes('video_understand') ? `<button class="secondary" style="padding:5px 10px;font-size:11px;margin-left:6px;" onclick="alert('请先选择该视频的预处理结果')">视频理解</button>` : ''}
         ${(v.analysis_packages || []).map(a => `
-          <span class="tag" style="margin-right:6px;">${a.id} · ${a.shot_count}镜头</span>
-        `).join('') || '<span class="hint">暂无分析包</span>'}
+          <span class="tag" style="margin-left:6px;">${a.id} · ${a.shot_count}镜头</span>
+        `).join('') || '<span class="hint" style="margin-left:8px;">暂无分析包</span>'}
       </div>
     </div>
   `).join('');
@@ -946,6 +979,7 @@ function populateModelSelect(selectId, models, preferred) {
 
 // 页面加载时初始化
 document.addEventListener('DOMContentLoaded', () => {
+  $('library-upload-form').addEventListener('submit', uploadLibraryVideo);
   loadAnalysisHistory();
   loadModelSelectors();
   loadReusableResultSelectors();

@@ -92,6 +92,46 @@ async def page() -> HTMLResponse:
 # ============================================================================
 # 热点视频库
 # ============================================================================
+@router.post("/hot-videos/upload")
+async def upload_hot_video_to_library(
+    request: Request,
+    file: Annotated[UploadFile, File()],
+    source_platform: Annotated[str, Form()] = SourcePlatform.DOUYIN.value,
+    rights_status: Annotated[str, Form()] = RightsStatus.REFERENCE_ONLY.value,
+    registered_by: Annotated[str, Form()] = "library_user",
+    selection_reason: Annotated[str, Form()] = "热点视频库上传",
+) -> dict[str, Any]:
+    """从热点视频库上传并入库，成功后不自动启动后续分析。"""
+    container = container_of(request)
+    workdir = Path(tempfile.mkdtemp(prefix="vf_library_upload_"))
+    try:
+        target = workdir / (Path(file.filename or "upload.mp4").name or "upload.mp4")
+        written = 0
+        with target.open("wb") as sink:
+            while chunk := await file.read(1024 * 1024):
+                written += len(chunk)
+                if written > _MAX_UPLOAD_BYTES:
+                    raise CapabilityError(ErrorCode.INVALID_PARAMETERS, "文件超过 500MB 上限")
+                sink.write(chunk)
+        result = await container.capabilities.get("hot_video_ingest").execute(
+            CapabilityRequest(
+                parameters={
+                    "file_path": str(target),
+                    "source_platform": source_platform,
+                    "rights_status": rights_status,
+                    "registered_by": registered_by,
+                    "selection_reason": selection_reason,
+                    "mime_type": file.content_type or "video/mp4",
+                },
+                idempotency_key=f"library-ingest-{uuid.uuid4().hex[:12]}",
+            )
+        )
+        ref = result.output_refs[0]
+        return {"ref": str(ref), "notes": result.notes}
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+
+
 @router.get("/hot-videos")
 async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
     """热点视频库：逻辑视频、入库版本与关联分析包摘要。"""
@@ -111,6 +151,18 @@ async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
     for version in latest_by_id.values():
         body = dict(version.body)
         ref = str(version.ref)
+        packages = packages_by_hot.get(ref, [])
+        has_preprocess = any(p.get("preprocess", {}).get("ref") for p in packages)
+        has_understand = any((p.get("video_understand") or {}).get("ref") for p in packages)
+        has_marketing = any((p.get("marketing_analysis") or {}).get("ref") for p in packages)
+        if has_marketing:
+            processing_state = "market_analyzed"
+        elif has_understand:
+            processing_state = "understood"
+        elif has_preprocess:
+            processing_state = "preprocessed"
+        else:
+            processing_state = "unprocessed"
         videos.append(
             {
                 "ref": ref,
@@ -124,9 +176,22 @@ async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
                 "rights_status": body.get("rights_status"),
                 "selection_reason": body.get("selection_reason"),
                 "asset_id": body.get("asset_id"),
-                "analysis_packages": packages_by_hot.get(ref, []),
+                "analysis_packages": packages,
+                "processing_state": processing_state,
+                "available_actions": [
+                    action
+                    for action, allowed in (
+                        ("preprocess", not has_preprocess),
+                        ("video_understand", has_preprocess and not has_understand),
+                        ("marketing_analysis", has_understand and not has_marketing),
+                    )
+                    if allowed
+                ],
             }
         )
+    # 未处理优先；同一状态内按上传/登记时间倒序。
+    videos.sort(key=lambda item: item["created_at"], reverse=True)
+    videos.sort(key=lambda item: item["processing_state"] != "unprocessed")
     return videos
 
 
