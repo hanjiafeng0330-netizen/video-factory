@@ -8,8 +8,6 @@
 
 from __future__ import annotations
 
-import csv
-import io
 import json
 import logging
 import shutil
@@ -22,13 +20,14 @@ from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from app.api.deps import container_of
+from app.api.xlsx_export import build_analysis_workbook
 from app.domain.assets import RightsStatus
 from app.domain.capability import CapabilityRequest
 from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.hot_video import SourcePlatform
 from app.domain.media import ShotList
 from app.domain.model_catalog import ModelAbility, models_with, require_ability
-from app.domain.refs import ArtifactRef
+from app.domain.refs import ArtifactRef, ArtifactType
 from app.domain.shot_script import ShotScript, build_shot_script, render_for_analysis
 from app.domain.transcript import Transcript
 
@@ -91,6 +90,47 @@ async def page() -> HTMLResponse:
 
 
 # ============================================================================
+# 热点视频库
+# ============================================================================
+@router.get("/hot-videos")
+async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
+    """热点视频库：逻辑视频、入库版本与关联分析包摘要。"""
+    container = container_of(request)
+    latest_by_id: dict[str, Any] = {}
+    for version in container.artifacts.list_by_type(ArtifactType.HOT_VIDEO):
+        latest_by_id.setdefault(version.id, version)
+
+    packages_by_hot: dict[str, list[dict[str, Any]]] = {}
+    for session in _list_analyses():
+        data = _load_analysis(session["id"])
+        if data:
+            hot_ref = (data.get("hot_video") or {}).get("ref", "")
+            packages_by_hot.setdefault(hot_ref, []).append(session)
+
+    videos: list[dict[str, Any]] = []
+    for version in latest_by_id.values():
+        body = dict(version.body)
+        ref = str(version.ref)
+        videos.append(
+            {
+                "ref": ref,
+                "logical_id": version.id,
+                "version": version.version,
+                "created_at": version.created_at.isoformat(),
+                "source_platform": body.get("source_platform", ""),
+                "author": body.get("author"),
+                "source_url": body.get("source_url"),
+                "tags": body.get("tags", []),
+                "rights_status": body.get("rights_status"),
+                "selection_reason": body.get("selection_reason"),
+                "asset_id": body.get("asset_id"),
+                "analysis_packages": packages_by_hot.get(ref, []),
+            }
+        )
+    return videos
+
+
+# ============================================================================
 # 分析历史与导出
 # ============================================================================
 @router.get("/analyses")
@@ -108,82 +148,19 @@ async def get_analysis(analysis_id: str, request: Request) -> dict[str, Any]:
     return data
 
 
-@router.get("/analyses/{analysis_id}/export")
-async def export_analysis_csv(analysis_id: str, request: Request) -> Response:
-    """导出分析结果为 CSV。"""
+@router.get("/analyses/{analysis_id}/export.xlsx")
+async def export_analysis_xlsx(analysis_id: str, request: Request) -> Response:
+    """导出完整视频分析包：视频分析 + 营销分析两个 Sheet，嵌入关键帧图片。"""
     data = _load_analysis(analysis_id)
     if data is None:
         raise CapabilityError(ErrorCode.ARTIFACT_NOT_FOUND, f"分析结果不存在：{analysis_id}")
-
-    shot_script = data.get("shot_script", {})
-    entries = shot_script.get("entries", [])
-
-    # 生成 CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
-
-    # 表头
-    writer.writerow(
-        [
-            "镜头序号",
-            "开始时间(ms)",
-            "结束时间(ms)",
-            "时长(ms)",
-            "画面描述",
-            "台词",
-            "台词开始(ms)",
-            "台词结束(ms)",
-            "跨镜头",
-            "关键帧数",
-            "语音占比",
-            "是否静音",
-        ]
-    )
-
-    # 数据行
-    for entry in entries:
-        lines = entry.get("lines", [])
-        for _i, line in enumerate(lines):
-            writer.writerow(
-                [
-                    entry["index"],
-                    entry["start_ms"],
-                    entry["end_ms"],
-                    entry["duration_ms"],
-                    entry.get("visual_description", ""),
-                    line.get("text", ""),
-                    line.get("start_ms", ""),
-                    line.get("end_ms", ""),
-                    "是" if line.get("spans_shot_boundary") else "否",
-                    len(entry.get("keyframe_asset_ids", [])),
-                    f"{entry.get('speech_ratio', 0):.0%}",
-                    "是" if entry.get("is_silent") else "否",
-                ]
-            )
-        # 如果没有台词，也输出一行
-        if not lines:
-            writer.writerow(
-                [
-                    entry["index"],
-                    entry["start_ms"],
-                    entry["end_ms"],
-                    entry["duration_ms"],
-                    entry.get("visual_description", ""),
-                    "",
-                    "",
-                    "",
-                    "",
-                    len(entry.get("keyframe_asset_ids", [])),
-                    f"{entry.get('speech_ratio', 0):.0%}",
-                    "是" if entry.get("is_silent") else "否",
-                ]
-            )
-
-    csv_content = output.getvalue()
+    content = build_analysis_workbook(data, container_of(request).assets)
     return Response(
-        content=csv_content.encode("utf-8-sig"),  # utf-8-sig 让 Excel 正确识别中文
-        media_type="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="analysis_{analysis_id}.csv"'},
+        content=content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="video_analysis_{analysis_id}.xlsx"'
+        },
     )
 
 

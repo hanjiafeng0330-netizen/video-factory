@@ -140,3 +140,10 @@ class InMemoryArtifactRepository:
 
     def dependents(self, ref: ArtifactRef) -> tuple[ArtifactRef, ...]:
         return tuple(self._dependents.get(ref, ()))
+
+    def list_by_type(self, artifact_type: ArtifactType) -> tuple[ArtifactVersion, ...]:
+        versions: list[ArtifactVersion] = []
+        for (stored_type, _), chain in self._versions.items():
+            if stored_type is artifact_type:
+                versions.extend(chain)
+        return tuple(sorted(versions, key=lambda item: item.created_at, reverse=True))

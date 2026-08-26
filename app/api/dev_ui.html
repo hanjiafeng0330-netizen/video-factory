@@ -148,6 +148,7 @@
   <h1>营销视频生产系统</h1>
   <div style="display:flex;gap:10px;align-items:center;">
     <span class="badge" id="nav-analysis" style="cursor:pointer;" onclick="showPage('analysis')">步骤化分析</span>
+    <span class="badge" id="nav-library" style="cursor:pointer;background:#1d2a3a;" onclick="showPage('library')">热点视频库</span>
     <span class="badge" id="nav-prompts" style="cursor:pointer;background:#1d2a3a;" onclick="showPage('prompts')">提示词配置</span>
   </div>
   <span class="hint" style="margin:0">内存仓储，重启即清空</span>
@@ -320,6 +321,17 @@
 </main>
 </div>
 
+<!-- 热点视频库页面 -->
+<div id="page-library" style="display:none;">
+<main>
+  <div class="panel">
+    <h2>热点视频库</h2>
+    <p class="hint">管理已上传视频、版本和关联的视频分析包。</p>
+  </div>
+  <div id="hot-videos-list"></div>
+</main>
+</div>
+
 <!-- 提示词配置页面 -->
 <div id="page-prompts" style="display:none;">
 <main>
@@ -358,13 +370,57 @@ function showPage(page) {
     $('nav-analysis').style.background = '#1d2a3a';
     $('nav-prompts').style.background = '#2a2113';
     loadAnalysisHistory();
+  } else if (page === 'library') {
+    $('page-analysis').style.display = 'none';
+    $('page-library').style.display = 'block';
+    $('page-prompts').style.display = 'none';
+    $('nav-analysis').style.background = '#2a2113';
+    $('nav-library').style.background = '#1d2a3a';
+    $('nav-prompts').style.background = '#2a2113';
+    loadHotVideos();
   } else if (page === 'prompts') {
     $('page-analysis').style.display = 'none';
+    $('page-library').style.display = 'none';
     $('page-prompts').style.display = 'block';
     $('nav-analysis').style.background = '#2a2113';
+    $('nav-library').style.background = '#2a2113';
     $('nav-prompts').style.background = '#1d2a3a';
     loadPrompts();
   }
+}
+
+// 加载热点视频库
+async function loadHotVideos() {
+  try {
+    const resp = await fetch('/dev/hot-videos');
+    renderHotVideos(await resp.json());
+  } catch (err) {
+    $('hot-videos-list').innerHTML = `<div class="err">加载失败：${err}</div>`;
+  }
+}
+
+function renderHotVideos(videos) {
+  if (!videos.length) {
+    $('hot-videos-list').innerHTML = '<p class="hint">暂无已上传视频</p>';
+    return;
+  }
+  $('hot-videos-list').innerHTML = videos.map(v => `
+    <div class="panel">
+      <h2>${v.logical_id} <span class="tag">v${v.version}</span></h2>
+      <dl class="kv">
+        <dt>来源</dt><dd>${v.source_platform || '-'} ${v.author ? '· ' + escapeHtml(v.author) : ''}</dd>
+        <dt>权利状态</dt><dd>${v.rights_status || '-'}</dd>
+        <dt>标签</dt><dd>${(v.tags || []).join('、') || '-'}</dd>
+        <dt>入库理由</dt><dd>${escapeHtml(v.selection_reason || '')}</dd>
+        <dt>分析包</dt><dd>${(v.analysis_packages || []).length} 个</dd>
+      </dl>
+      <div style="margin-top:12px;">
+        ${(v.analysis_packages || []).map(a => `
+          <span class="tag" style="margin-right:6px;">${a.id} · ${a.shot_count}镜头</span>
+        `).join('') || '<span class="hint">暂无分析包</span>'}
+      </div>
+    </div>
+  `).join('');
 }
 
 // 加载分析历史
@@ -407,8 +463,8 @@ function renderAnalysisHistory(analyses) {
             <td>
               <button class="secondary" style="padding:3px 8px;font-size:11px;margin-right:4px;"
                       onclick="viewAnalysis('${a.id}')">查看</button>
-              <a href="/dev/analyses/${a.id}/export" style="text-decoration:none;">
-                <button class="secondary" style="padding:3px 8px;font-size:11px;">导出CSV</button>
+              <a href="/dev/analyses/${a.id}/export.xlsx" style="text-decoration:none;">
+                <button class="secondary" style="padding:3px 8px;font-size:11px;">导出 Excel</button>
               </a>
             </td>
           </tr>
@@ -657,8 +713,8 @@ function renderStep2Result(d) {
     <div class="panel">
       <h2>镜头脚本（含台词）</h2>
       <div style="margin-bottom:12px;">
-        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
-          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出CSV</button>
+        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export.xlsx" style="text-decoration:none;">
+          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出 Excel</button>
         </a>` : ''}
       </div>
       <div id="shotScript"></div>
@@ -758,8 +814,8 @@ function renderStep3Result(d) {
     <div class="panel">
       <h2>镜头脚本（带画面描述）</h2>
       <div style="margin-bottom:12px;">
-        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
-          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出CSV</button>
+        ${analysisId ? `<a href="/dev/analyses/${analysisId}/export.xlsx" style="text-decoration:none;">
+          <button class="secondary" style="padding:6px 12px;font-size:12px;">导出 Excel</button>
         </a>` : ''}
       </div>
       <div id="shotScript3"></div>
@@ -842,8 +898,8 @@ function renderStep4Result(d) {
     <div class="panel">
       <h2>备注</h2>
       <p>${escapeHtml(ma.notes || '无')}</p>
-      ${analysisId ? `<a href="/dev/analyses/${analysisId}/export" style="text-decoration:none;">
-        <button class="secondary" style="padding:6px 12px;font-size:12px;margin-top:12px;">导出完整CSV</button>
+      ${analysisId ? `<a href="/dev/analyses/${analysisId}/export.xlsx" style="text-decoration:none;">
+        <button class="secondary" style="padding:6px 12px;font-size:12px;margin-top:12px;">导出完整 Excel</button>
       </a>` : ''}
     </div>
   `;

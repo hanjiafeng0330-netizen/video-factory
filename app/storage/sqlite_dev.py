@@ -133,6 +133,12 @@ class SQLiteArtifactRepository:
                 )
         return tuple(result)
 
+    def list_by_type(self, artifact_type: ArtifactType) -> tuple[ArtifactVersion, ...]:
+        rows = self._db.execute(
+            "SELECT * FROM artifacts WHERE type=? ORDER BY created_at DESC", (artifact_type.value,)
+        ).fetchall()
+        return tuple(self._row_to_version(row) for row in rows)
+
     def transition(self, ref: ArtifactRef, target: ArtifactStatus) -> ArtifactVersion:
         current = self.get(ref)
         validate_transition(current.status, target)

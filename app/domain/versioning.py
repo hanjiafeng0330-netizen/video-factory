@@ -179,6 +179,10 @@ class ArtifactRepository(Protocol):
         """直接引用了该版本的下游产物。"""
         ...
 
+    def list_by_type(self, artifact_type: ArtifactType) -> tuple[ArtifactVersion, ...]:
+        """列出某类所有版本，供热点库等只读索引使用。"""
+        ...
+
 
 def propagate_staleness(
     repo: ArtifactRepository, superseding: ArtifactVersion, *, now: datetime
