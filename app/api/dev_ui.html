@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>营销视频生产系统 · 开发验收页</title>
+<title>营销视频生产系统 · 步骤化分析</title>
 <style>
   :root {
     --bg: #0f1115; --panel: #171a21; --line: #262b35;
@@ -25,6 +25,34 @@
     background: #2a2113; color: var(--warn); border: 1px solid #4a3a1c;
   }
   main { padding: 24px 28px; max-width: 1180px; }
+
+  /* 步骤指示器 */
+  .steps {
+    display: flex; gap: 0; margin-bottom: 30px; border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden;
+  }
+  .step {
+    flex: 1; padding: 16px 20px; background: var(--panel); border-right: 1px solid var(--line);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .step:last-child { border-right: none; }
+  .step:hover { background: #1d2129; }
+  .step.active { background: #1d2a3a; border-left: 3px solid var(--accent); }
+  .step.done { background: #1a2a1a; }
+  .step-num {
+    display: inline-block; width: 24px; height: 24px; line-height: 24px;
+    text-align: center; border-radius: 50%; background: var(--line);
+    font-weight: 700; font-size: 12px; margin-right: 10px;
+  }
+  .step.active .step-num { background: var(--accent); }
+  .step.done .step-num { background: var(--ok); }
+  .step-title { font-weight: 600; font-size: 14px; }
+  .step-desc { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+  /* 步骤内容 */
+  .step-content { display: none; }
+  .step-content.active { display: block; }
+
   .panel {
     background: var(--panel); border: 1px solid var(--line);
     border-radius: 10px; padding: 20px; margin-bottom: 20px;
@@ -46,16 +74,20 @@
     color: #fff; cursor: pointer; font-weight: 600; padding: 9px 20px;
   }
   button:disabled { opacity: .5; cursor: not-allowed; }
+  button.secondary { background: var(--line); border-color: var(--line); }
   .hint { color: var(--dim); font-size: 12px; margin-top: 10px; }
+
   table { width: 100%; border-collapse: collapse; }
   th, td {
     text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line);
     font-variant-numeric: tabular-nums;
   }
   th { color: var(--dim); font-weight: 600; font-size: 12px; }
+
   .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; }
   .kv dt { color: var(--dim); }
   .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+
   .frames { display: flex; gap: 12px; flex-wrap: wrap; }
   .frame { width: 116px; }
   .frame img {
@@ -63,24 +95,7 @@
     border-radius: 7px; border: 1px solid var(--line); display: block;
   }
   .frame span { font-size: 11px; color: var(--dim); display: block; margin-top: 5px; }
-  .timeline {
-    display: flex; height: 34px; border-radius: 7px; overflow: hidden;
-    border: 1px solid var(--line); margin-bottom: 12px;
-  }
-  .seg {
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px; color: #0b0d11; font-weight: 700;
-    border-right: 1px solid var(--bg);
-  }
-  .seg:last-child { border-right: none; }
-  code { background: #10131a; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
-  .lineage div { font-family: ui-monospace, monospace; font-size: 12px; }
-  .err {
-    background: #2a1416; border: 1px solid #5a2528; color: #ffb4b4;
-    padding: 12px 14px; border-radius: 8px; white-space: pre-wrap;
-  }
-  .ok { color: var(--ok); }
-  .hidden { display: none; }
+
   .sentry {
     display: grid; grid-template-columns: 92px 1fr; gap: 14px;
     padding: 14px 0; border-bottom: 1px solid var(--line);
@@ -114,6 +129,12 @@
   }
   .bar { height: 4px; background: #232833; border-radius: 2px; overflow: hidden; width: 120px; display:inline-block; vertical-align:-1px; }
   .bar i { display: block; height: 100%; background: var(--accent); }
+  code { background: #10131a; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  .err {
+    background: #2a1416; border: 1px solid #5a2528; color: #ffb4b4;
+    padding: 12px 14px; border-radius: 8px; white-space: pre-wrap;
+  }
+  .hidden { display: none; }
   .spin::after {
     content: ''; display: inline-block; width: 11px; height: 11px;
     margin-left: 9px; border: 2px solid #fff6; border-top-color: #fff;
@@ -125,204 +146,262 @@
 <body>
 <header>
   <h1>营销视频生产系统</h1>
-  <span class="badge">开发验收页 · 非运营工作台</span>
+  <span class="badge">步骤化分析</span>
   <span class="hint" style="margin:0">内存仓储，重启即清空</span>
 </header>
 
 <main>
-  <div class="panel">
-    <h2>上传并拆分</h2>
-    <form id="form">
-      <div class="row">
-        <div class="field">
-          <label>视频文件</label>
-          <input type="file" name="file" accept="video/*" required>
-        </div>
-        <div class="field">
-          <label>来源平台</label>
-          <select name="source_platform">
-            <option value="douyin">抖音</option>
-            <option value="kuaishou">快手</option>
-            <option value="xiaohongshu">小红书</option>
-            <option value="bilibili">B站</option>
-            <option value="wechat_channels">视频号</option>
-            <option value="other">其他</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>授权口径</label>
-          <select name="rights_status">
-            <option value="reference_only">仅参考分析</option>
-            <option value="licensed">已获授权</option>
-            <option value="owned">自有素材</option>
-            <option value="unknown">未标注（会被拒绝）</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>切分灵敏度 <span id="sv">0.50</span></label>
-          <input type="range" name="shot_sensitivity" min="0.05" max="0.95"
-                 step="0.05" value="0.5" id="sens">
-        </div>
-        <div class="field">
-          <label>语音转写</label>
-          <select name="transcribe">
-            <option value="true">开启（首次会下载模型）</option>
-            <option value="false">关闭</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>语种</label>
-          <select name="language">
-            <option value="">自动识别</option>
-            <option value="zh">中文</option>
-            <option value="en">英文</option>
-          </select>
-        </div>
-        <button type="submit" id="go">开始分析</button>
-      </div>
-      <div class="row" style="margin-top:14px">
-        <div class="field" style="flex:1">
-          <label>入库理由（必填，至少 4 字）</label>
-          <input name="selection_reason" value="开发环境手动验收" required minlength="4">
-        </div>
-      </div>
-      <p class="hint">
-        授权口径选「未标注」会被拒绝，这是设计文档 13.3 的硬校验，可以用来验证拦截。
-        同一个视频重复上传会成为同一逻辑产物的新版本，不会重复存储文件。
-      </p>
-    </form>
+  <!-- 步骤指示器 -->
+  <div class="steps">
+    <div class="step active" data-step="1" onclick="showStep(1)">
+      <span class="step-num">1</span>
+      <span class="step-title">上传视频</span>
+      <div class="step-desc">上传并入库</div>
+    </div>
+    <div class="step" data-step="2" onclick="showStep(2)">
+      <span class="step-num">2</span>
+      <span class="step-title">预处理</span>
+      <div class="step-desc">镜头切分 + 关键帧 + 转写</div>
+    </div>
+    <div class="step" data-step="3" onclick="showStep(3)">
+      <span class="step-num">3</span>
+      <span class="step-title">视频理解</span>
+      <div class="step-desc">LLM分析（可选）</div>
+    </div>
   </div>
 
-  <div id="error" class="panel hidden">
-    <h2>失败</h2>
-    <div class="err" id="errorBody"></div>
+  <!-- 步骤1：上传视频 -->
+  <div class="step-content active" id="step1">
+    <div class="panel">
+      <h2>上传视频</h2>
+      <form id="form1">
+        <div class="row">
+          <div class="field">
+            <label>视频文件</label>
+            <input type="file" name="file" accept="video/*" required>
+          </div>
+          <div class="field">
+            <label>来源平台</label>
+            <select name="source_platform">
+              <option value="douyin">抖音</option>
+              <option value="kuaishou">快手</option>
+              <option value="xiaohongshu">小红书</option>
+              <option value="bilibili">B站</option>
+              <option value="wechat_channels">视频号</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>授权口径</label>
+            <select name="rights_status">
+              <option value="reference_only">仅参考分析</option>
+              <option value="licensed">已获授权</option>
+              <option value="owned">自有素材</option>
+              <option value="unknown">未标注（会被拒绝）</option>
+            </select>
+          </div>
+          <button type="submit" id="btn1">上传</button>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="field" style="flex:1">
+            <label>入库理由（必填，至少 4 字）</label>
+            <input name="selection_reason" value="开发环境手动验收" required minlength="4">
+          </div>
+        </div>
+      </form>
+    </div>
+    <div id="result1" class="hidden"></div>
   </div>
 
-  <div id="result" class="hidden">
+  <!-- 步骤2：预处理 -->
+  <div class="step-content" id="step2">
     <div class="panel">
-      <h2>媒体信息</h2>
-      <dl class="kv" id="meta"></dl>
+      <h2>预处理：镜头切分 + 关键帧 + 语音转写</h2>
+      <form id="form2">
+        <div class="row">
+          <div class="field">
+            <label>切分灵敏度 <span id="sv">0.50</span></label>
+            <input type="range" name="shot_sensitivity" min="0.05" max="0.95"
+                   step="0.05" value="0.5" id="sens">
+          </div>
+          <div class="field">
+            <label>语音转写</label>
+            <select name="run_transcription">
+              <option value="true">开启（首次会下载模型）</option>
+              <option value="false">关闭</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>语种</label>
+            <select name="language">
+              <option value="">自动识别</option>
+              <option value="zh">中文</option>
+              <option value="en">英文</option>
+            </select>
+          </div>
+          <button type="submit" id="btn2">开始预处理</button>
+        </div>
+      </form>
+      <p class="hint">每个镜头抽取3帧（首/中/尾附近），避开转场。使用 faster-whisper 本地模型转写。</p>
     </div>
+    <div id="result2" class="hidden"></div>
+  </div>
 
+  <!-- 步骤3：视频理解 -->
+  <div class="step-content" id="step3">
     <div class="panel">
-      <h2>镜头切分</h2>
-      <div class="timeline" id="timeline"></div>
-      <table>
-        <thead><tr><th>#</th><th>开始</th><th>结束</th><th>时长</th><th>关键帧位置</th></tr></thead>
-        <tbody id="shots"></tbody>
-      </table>
+      <h2>视频理解：LLM分析</h2>
+      <form id="form3">
+        <div class="row">
+          <button type="submit" id="btn3">开始分析</button>
+        </div>
+      </form>
+      <p class="hint">调用视觉模型分析每个镜头的画面内容，生成综合描述。</p>
     </div>
-
-    <div class="panel">
-      <h2>镜头脚本 · 画面与台词对齐</h2>
-      <div id="scriptSummary" class="hint" style="margin-top:0;margin-bottom:14px"></div>
-      <div id="shotScript"></div>
-      <details style="margin-top:16px">
-        <summary style="cursor:pointer;color:var(--dim);font-size:12px">
-          供模型消费的序列化文本（这是数据，不含任何指令）
-        </summary>
-        <pre id="rendered"></pre>
-      </details>
-    </div>
-
-    <div class="panel">
-      <h2>关键帧</h2>
-      <div class="frames" id="frames"></div>
-      <p class="hint" id="frameHint"></p>
-    </div>
-
-    <div class="panel">
-      <h2>音轨</h2>
-      <div id="audio"></div>
-    </div>
-
-    <div class="panel">
-      <h2>血缘回溯</h2>
-      <div class="lineage" id="lineage"></div>
-      <p class="hint">血缘由仓储在产物落地时自动写入，能力代码里没有一行写血缘。</p>
-    </div>
-
-    <div class="panel">
-      <h2>版本</h2>
-      <div id="versions"></div>
-      <p class="hint">重复上传同一视频或重跑预处理会产生新版本，旧版本仍可查。</p>
-    </div>
+    <div id="result3" class="hidden"></div>
   </div>
 </main>
 
 <script>
 const $ = (id) => document.getElementById(id);
 const ms = (v) => (v / 1000).toFixed(2) + 's';
-const HUES = [205, 145, 35, 280, 0, 175, 60, 320];
 
+// 全局状态
+let state = {
+  hot_video: null,
+  preprocess: null,
+  video_understand: null,
+};
+
+// 切换步骤
+function showStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.step[data-step="${n}"]`).classList.add('active');
+  document.querySelectorAll('.step-content').forEach(c => c.classList.remove('active'));
+  $(`step${n}`).classList.add('active');
+}
+
+// 标记步骤完成
+function markStepDone(n) {
+  document.querySelector(`.step[data-step="${n}"]`).classList.add('done');
+}
+
+// 灵敏度滑块
 $('sens').addEventListener('input', (e) => { $('sv').textContent = (+e.target.value).toFixed(2); });
 
-$('form').addEventListener('submit', async (e) => {
+// 步骤1：上传
+$('form1').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = $('go');
-  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
-  $('error').classList.add('hidden');
-  $('result').classList.add('hidden');
+  const btn = $('btn1');
+  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '上传中';
 
   try {
-    const resp = await fetch('/dev/analyze', { method: 'POST', body: new FormData(e.target) });
+    const resp = await fetch('/dev/step1/upload', { method: 'POST', body: new FormData(e.target) });
     const data = await resp.json();
     if (!resp.ok) {
-      $('errorBody').textContent =
-        `${data.code || resp.status}  [${data.category || '-'}]\n${data.message || JSON.stringify(data, null, 2)}` +
-        (data.suggested_action ? `\n\n建议动作：${data.suggested_action}   可重试：${data.retryable}` : '');
-      $('error').classList.remove('hidden');
+      $('result1').innerHTML = `<div class="err">${data.detail || JSON.stringify(data)}</div>`;
+      $('result1').classList.remove('hidden');
       return;
     }
-    render(data);
+    state.hot_video = data.hot_video;
+    markStepDone(1);
+    renderStep1Result(data);
+    showStep(2);
   } catch (err) {
-    $('errorBody').textContent = String(err);
-    $('error').classList.remove('hidden');
+    $('result1').innerHTML = `<div class="err">${err}</div>`;
+    $('result1').classList.remove('hidden');
   } finally {
-    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '开始分析';
+    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '上传';
   }
 });
 
-function render(d) {
-  const m = d.preprocess.metadata;
-  const shots = d.preprocess.shots;
+function renderStep1Result(d) {
+  const hv = d.hot_video;
+  $('result1').innerHTML = `
+    <div class="panel">
+      <h2>视频已入库</h2>
+      <dl class="kv">
+        <dt>产物引用</dt><dd><code>${hv.ref}</code></dd>
+        <dt>来源平台</dt><dd>${hv.body.source_platform}</dd>
+        <dt>授权口径</dt><dd>${hv.body.rights_status}</dd>
+        <dt>入库理由</dt><dd>${hv.body.selection_reason}</dd>
+      </dl>
+      <p class="hint">${hv.notes.join(', ')}</p>
+    </div>
+  `;
+  $('result1').classList.remove('hidden');
+}
 
-  $('meta').innerHTML = [
-    ['分辨率', `${m.width} × ${m.height}`],
-    ['比例', m.width && m.height ? ratio(m.width, m.height) : '-'],
-    ['时长', ms(m.duration_ms)],
-    ['帧率', m.fps.toFixed(2) + ' fps'],
-    ['视频编码', m.video_codec || '-'],
-    ['音频编码', m.audio_codec || '（无音轨）'],
-    ['热点产物', `<code>${d.hot_video.ref}</code>`],
-    ['预处理产物', `<code>${d.preprocess.ref}</code>`],
-    ['入库理由', d.hot_video.body.selection_reason],
-  ].map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+// 步骤2：预处理
+$('form2').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.hot_video) { alert('请先完成步骤1'); return; }
+  const btn = $('btn2');
+  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '预处理中';
 
-  const total = shots[shots.length - 1].end_ms;
-  $('timeline').innerHTML = shots.map((s, i) => {
-    const pct = ((s.end_ms - s.start_ms) / total * 100).toFixed(3);
-    return `<div class="seg" style="width:${pct}%;background:hsl(${HUES[i % HUES.length]} 62% 62%)"
-             title="${ms(s.start_ms)} – ${ms(s.end_ms)}">${i}</div>`;
-  }).join('');
+  const fd = new FormData(e.target);
+  fd.append('hot_video_ref', state.hot_video.ref);
 
-  $('shots').innerHTML = shots.map((s) => `<tr>
-      <td>${s.index}</td><td>${ms(s.start_ms)}</td><td>${ms(s.end_ms)}</td>
-      <td>${s.end_ms - s.start_ms} ms</td>
-      <td>${ms(Math.floor(s.start_ms + (s.end_ms - s.start_ms) / 2))}</td>
-    </tr>`).join('');
+  try {
+    const resp = await fetch('/dev/step2/preprocess', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (!resp.ok) {
+      $('result2').innerHTML = `<div class="err">${data.detail || JSON.stringify(data)}</div>`;
+      $('result2').classList.remove('hidden');
+      return;
+    }
+    state.preprocess = data.preprocess;
+    state.shot_script = data.shot_script;
+    markStepDone(2);
+    renderStep2Result(data);
+    showStep(3);
+  } catch (err) {
+    $('result2').innerHTML = `<div class="err">${err}</div>`;
+    $('result2').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '开始预处理';
+  }
+});
 
+function renderStep2Result(d) {
+  const pp = d.preprocess;
   const ss = d.shot_script;
+  const shots = pp.shots;
   const tr = d.transcript;
-  $('scriptSummary').innerHTML = tr.error
-    ? `<span style="color:var(--err)">转写失败：${tr.error}</span> —— 镜头切分结果仍然有效。`
-    : !ss.has_transcript
-      ? '未开启转写，仅显示镜头结构。'
-      : `${tr.model} · 语言 ${tr.language} · ${tr.line_count} 句 · ` +
-        `整体语音占比 ${(ss.speech_ratio * 100).toFixed(0)}% · ` +
-        `纯画面镜头 ${ss.silent_shot_count} 个`;
 
-  $('shotScript').innerHTML = ss.entries.map((e) => `
+  let html = `
+    <div class="panel">
+      <h2>预处理结果</h2>
+      <dl class="kv">
+        <dt>产物引用</dt><dd><code>${pp.ref}</code></dd>
+        <dt>分辨率</dt><dd>${pp.metadata.width} × ${pp.metadata.height}</dd>
+        <dt>时长</dt><dd>${ms(pp.metadata.duration_ms)}</dd>
+        <dt>镜头数</dt><dd>${shots.length}</dd>
+        <dt>总帧数</dt><dd>${pp.keyframes.flat().length}（每镜头 ${pp.frames_per_shot} 帧）</dd>
+      </dl>
+      ${tr ? `
+      <dl class="kv" style="margin-top:16px">
+        <dt>转写产物</dt><dd><code>${tr.ref || '无'}</code></dd>
+        <dt>转写模型</dt><dd>${tr.model || '-'}</dd>
+        <dt>语言</dt><dd>${tr.language || '-'}</dd>
+        <dt>句数</dt><dd>${tr.line_count || 0}</dd>
+      </dl>
+      ` : ''}
+      ${tr && tr.error ? `<div class="err">转写失败：${tr.error}</div>` : ''}
+    </div>
+    <div class="panel">
+      <h2>镜头脚本（含台词）</h2>
+      <div id="shotScript"></div>
+    </div>
+  `;
+  $('result2').innerHTML = html;
+  $('result2').classList.remove('hidden');
+
+  renderShotScript(ss);
+}
+
+function renderShotScript(ss, containerId = 'shotScript') {
+  $(containerId).innerHTML = ss.entries.map((e) => `
     <div class="sentry">
       <div class="frames-strip">
         ${(e.keyframe_asset_ids || []).length === 0
@@ -342,51 +421,66 @@ function render(d) {
           ? `<div class="silent">${ss.has_transcript ? '（纯画面镜头，无台词）' : '（未转写）'}</div>`
           : e.lines.map((l) => `<div class="line"><span class="t">${escapeHtml(l.text)}</span>` +
               `${l.spans_shot_boundary ? '<span class="tag">跨镜头</span>' : ''}</div>`).join('')}
-        <div class="vis">画面描述：${e.visual_description || '待视觉理解（T3-3）填充'}</div>
+        <div class="vis">画面描述：${e.visual_description || '待视觉理解（步骤3）填充'}</div>
       </div>
     </div>`).join('');
+}
 
-  $('rendered').textContent = ss.rendered;
+// 步骤3：视频理解
+$('form3').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!state.preprocess) { alert('请先完成步骤2'); return; }
+  const btn = $('btn3');
+  btn.disabled = true; btn.classList.add('spin'); btn.textContent = '分析中';
 
-  const flatFrames = d.preprocess.keyframes.flatMap((frames, i) =>
-    frames.map((id, j) => ({ id, shot: i, frame: j, at_ms: d.preprocess.keyframe_timestamps[i][j] }))
-  );
-  $('frames').innerHTML = flatFrames.map((f) => `
-    <div class="frame">
-      <img src="/dev/assets/${f.id}" loading="lazy" alt="镜头 ${f.shot} 帧 ${f.frame}">
-      <span>镜头 ${f.shot} · 帧 ${f.frame + 1} · ${ms(f.at_ms)}</span>
-    </div>`).join('');
-  $('frameHint').textContent = d.preprocess.truncated_shots
-    ? `已达镜头采样上限，只抽取了 ${d.preprocess.keyframes.length} 个镜头的帧，实际有 ${shots.length} 个镜头。`
-    : `每个镜头抽 ${d.preprocess.frames_per_shot || 3} 帧（均匀分布在镜头内，避开首尾转场）；` +
-      `共 ${flatFrames.length} 帧。`;
-    : `每个镜头一帧，取镜头中点而非首帧（首帧常落在转场上，抽出来是黑帧或糊图）。`;
+  const fd = new FormData(e.target);
+  fd.append('preprocess_ref', state.preprocess.ref);
 
-  $('audio').innerHTML = d.preprocess.audio_asset_id
-    ? `<audio controls src="/dev/assets/${d.preprocess.audio_asset_id}" style="width:100%"></audio>
-       <p class="hint">已统一转成 16kHz 单声道 WAV，供后续 ASR 直接消费。资产 <code>${d.preprocess.audio_asset_id}</code></p>`
-    : `<p class="hint">该视频无音轨。</p>`;
+  try {
+    const resp = await fetch('/dev/step3/video_understand', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (!resp.ok) {
+      $('result3').innerHTML = `<div class="err">${data.detail || JSON.stringify(data)}</div>`;
+      $('result3').classList.remove('hidden');
+      return;
+    }
+    state.video_understand = data.video_understand;
+    state.shot_script = data.shot_script;
+    markStepDone(3);
+    renderStep3Result(data);
+  } catch (err) {
+    $('result3').innerHTML = `<div class="err">${err}</div>`;
+    $('result3').classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.classList.remove('spin'); btn.textContent = '开始分析';
+  }
+});
 
-  $('lineage').innerHTML = d.lineage.map((n) =>
-    `<div>${'&nbsp;'.repeat(n.depth * 4)}${n.depth ? '└─ ' : ''}${n.ref}` +
-    `${n.relation ? ` <span style="color:var(--dim)">(${n.relation})</span>` : ''}</div>`
-  ).join('');
+function renderStep3Result(d) {
+  const vu = d.video_understand;
+  const ss = d.shot_script;
 
-  $('versions').innerHTML = `<dl class="kv">
-    <dt>热点视频版本数</dt><dd>${d.versions.hot_video}</dd>
-    <dt>预处理版本数</dt><dd>${d.versions.preprocess}</dd></dl>`;
+  $('result3').innerHTML = `
+    <div class="panel">
+      <h2>视频理解结果</h2>
+      <dl class="kv">
+        <dt>产物引用</dt><dd><code>${vu.ref}</code></dd>
+        <dt>总镜头数</dt><dd>${vu.total_shots}</dd>
+        <dt>有画面描述的镜头</dt><dd>${vu.shots_with_visual_description}</dd>
+      </dl>
+    </div>
+    <div class="panel">
+      <h2>镜头脚本（带画面描述）</h2>
+      <div id="shotScript3"></div>
+    </div>
+  `;
+  $('result3').classList.remove('hidden');
 
-  $('result').classList.remove('hidden');
+  renderShotScript(ss, 'shotScript3');
 }
 
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-function ratio(w, h) {
-  const g = (a, b) => b ? g(b, a % b) : a;
-  const d = g(w, h);
-  return `${w / d}:${h / d}`;
 }
 </script>
 </body>

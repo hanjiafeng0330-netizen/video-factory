@@ -17,10 +17,13 @@ from pathlib import Path
 from fastapi import FastAPI
 
 from app.adapters.asr.faster_whisper import FasterWhisperRecognizer
+from app.adapters.llm.anthropic import AnthropicClient
 from app.adapters.media.ffmpeg import FfmpegMediaTool
 from app.adapters.media.scene_detect import SceneDetectShotDetector
 from app.capabilities.registry import CapabilityDeps, CapabilityRegistry, build_capabilities
 from app.platform.config import Settings, load_settings
+from app.prompts.registry import InMemoryPromptRegistry
+from app.prompts.seed import seed_and_activate_prompts
 from app.storage.local_assets import LocalAssetStore
 from app.storage.memory import InMemoryArtifactRepository
 from app.storage.memory_governance import InMemoryAuditLog, InMemoryIdempotencyStore
@@ -38,6 +41,7 @@ class DevContainer:
     lineage: InMemoryLineage
     idempotency: InMemoryIdempotencyStore
     audit: InMemoryAuditLog
+    prompts: InMemoryPromptRegistry
 
 
 def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
@@ -52,7 +56,23 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
     lineage = InMemoryLineage()
     artifacts = InMemoryArtifactRepository(lineage=lineage)
     assets = LocalAssetStore(asset_root)
+    audit = InMemoryAuditLog()
     media = FfmpegMediaTool()
+
+    # LLM 客户端
+    if settings.llm.api_key is None:
+        raise RuntimeError(
+            "开发档需要配置 LLM API 密钥。请在 .env.dev 中设置 VF_LLM__API_KEY"
+        )
+    llm = AnthropicClient(
+        base_url=settings.llm.base_url,
+        api_key=settings.llm.api_key.get_secret_value(),
+        timeout=settings.llm.timeout_seconds,
+    )
+
+    # 提示词注册表并激活
+    prompts = InMemoryPromptRegistry(audit=audit)
+    seed_and_activate_prompts(prompts, actor="bootstrap")
 
     return DevContainer(
         settings=settings,
@@ -66,13 +86,17 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
                 frames=media,
                 # 模型懒加载：首次转写时才下载，不拖慢进程启动。
                 recognizer=FasterWhisperRecognizer(),
+                llm=llm,
+                prompts=prompts,
+                vision_model=settings.llm.vision_model,
             )
         ),
         artifacts=artifacts,
         assets=assets,
         lineage=lineage,
         idempotency=InMemoryIdempotencyStore(),
-        audit=InMemoryAuditLog(),
+        audit=audit,
+        prompts=prompts,
     )
 
 

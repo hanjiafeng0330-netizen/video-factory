@@ -20,12 +20,15 @@ from app.capabilities.echo.capability import EchoCapability
 from app.capabilities.ingest_hot_video.capability import IngestHotVideoCapability
 from app.capabilities.preprocess_video.capability import PreprocessVideoCapability
 from app.capabilities.transcribe.capability import TranscribeCapability
+from app.capabilities.video_understand.capability import VideoUnderstandCapability
 from app.domain.assets import AssetStore
 from app.domain.capability import Capability
 from app.domain.errors import CapabilityError, ErrorCode
 from app.domain.media import AudioExtractor, FrameExtractor, MediaProbe, ShotDetector
 from app.domain.transcript import SpeechRecognizer
 from app.domain.versioning import ArtifactRepository
+from app.adapters.llm import LLMClient
+from app.domain.prompt_registry import PromptRegistry
 
 
 @dataclass(frozen=True)
@@ -43,6 +46,9 @@ class CapabilityDeps:
     shots: ShotDetector
     frames: FrameExtractor
     recognizer: SpeechRecognizer
+    llm: LLMClient
+    prompts: PromptRegistry
+    vision_model: str
 
 
 class CapabilityRegistry:
@@ -82,6 +88,13 @@ def build_capabilities(deps: CapabilityDeps) -> CapabilityRegistry:
                 artifacts=deps.artifacts,
                 assets=deps.assets,
                 recognizer=deps.recognizer,
+            ),
+            VideoUnderstandCapability(
+                artifacts=deps.artifacts,
+                assets=deps.assets,
+                llm=deps.llm,
+                prompts=deps.prompts,
+                vision_model=deps.vision_model,
             ),
         )
     )

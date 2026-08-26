@@ -20,6 +20,7 @@ class ArtifactType(StrEnum):
     MEDIA_ASSET = "media_asset"
     PREPROCESS_RESULT = "preprocess_result"
     TRANSCRIPT = "transcript"
+    SHOT_SCRIPT = "shot_script"
     VIDEO_ANALYSIS = "video_analysis"
     SCRIPT_PATTERN = "script_pattern"
     PRODUCT_PROFILE = "product_profile"

@@ -17,6 +17,7 @@ modules =
     app.capabilities.preprocess_video
     app.capabilities.ingest_hot_video
     app.capabilities.transcribe
+    app.capabilities.video_understand
     app.capabilities.understand_video
     app.capabilities.preprocess
     app.capabilities.understand

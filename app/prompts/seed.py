@@ -167,3 +167,17 @@ def seed_prompt_drafts(registry: InMemoryPromptRegistry) -> None:
         change_note="初版草案：叙事结构还原，强制证据引用并区分观测与推断",
         author="claude",
     )
+
+
+def seed_and_activate_prompts(registry: InMemoryPromptRegistry, actor: str = "bootstrap") -> None:
+    """登记并激活提示词。
+
+    开发环境用。生产环境应该用 seed_prompt_drafts 然后手动审核激活。
+    """
+    seed_prompt_drafts(registry)
+
+    # 激活所有提示词
+    for key in (SHOT_VISUAL_KEY, NARRATIVE_KEY):
+        versions = registry.history(key)
+        if versions:
+            registry.activate(key, versions[-1].version, actor=actor)
