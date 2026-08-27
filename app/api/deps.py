@@ -44,6 +44,8 @@ class Container(Protocol):
     @property
     def settings(self) -> Settings: ...
 
+    def llm_capabilities_for(self, api_key: str) -> CapabilityRegistry: ...
+
 
 def container_of(request: Request) -> Container:
     container: Container = request.app.state.container

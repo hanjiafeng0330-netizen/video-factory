@@ -76,10 +76,9 @@ def _classify_rate_limit(exc: anthropic.RateLimitError) -> CapabilityError:
         return CapabilityError(
             ErrorCode.BUDGET_EXCEEDED,
             "LLM 账户或模型额度已耗尽（quota_exceeded）。"
-            "请在模型配置中切换到有额度的模型，补充额度，或等待额度周期刷新。"
-            f"原始信息：{message}",
+            "请在模型配置中切换到有额度的模型，补充额度，或等待额度周期刷新。",
         )
-    return CapabilityError(ErrorCode.PROVIDER_RATE_LIMITED, f"LLM 速率限制：{message}")
+    return CapabilityError(ErrorCode.PROVIDER_RATE_LIMITED, "LLM 速率限制，请稍后重试。")
 
 
 class AnthropicClient:
@@ -134,15 +133,15 @@ class AnthropicClient:
             if exc.status_code < 500:
                 raise CapabilityError(
                     ErrorCode.PROVIDER_REJECTED_REQUEST,
-                    f"LLM 拒绝请求 ({exc.status_code})：{exc.message}",
+                    f"LLM 拒绝请求（HTTP {exc.status_code}）。",
                 ) from exc
             raise CapabilityError(
-                ErrorCode.PROVIDER_UNAVAILABLE, f"LLM 服务不可用：{exc.message}"
+                ErrorCode.PROVIDER_UNAVAILABLE, "LLM 服务暂不可用，请稍后重试。"
             ) from exc
         except anthropic.APITimeoutError as exc:
-            raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, f"LLM 调用超时：{exc}") from exc
+            raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, "LLM 调用超时，请稍后重试。") from exc
         except Exception as exc:
-            raise CapabilityError(ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}") from exc
+            raise CapabilityError(ErrorCode.INTERNAL_ERROR, "LLM 调用失败，请稍后重试。") from exc
 
         text = "".join(block.text for block in response.content if block.type == "text")
         return LLMResponse(
@@ -176,15 +175,15 @@ class AnthropicClient:
             if exc.status_code < 500:
                 raise CapabilityError(
                     ErrorCode.PROVIDER_REJECTED_REQUEST,
-                    f"LLM 拒绝请求 ({exc.status_code})：{exc.message}",
+                    f"LLM 拒绝请求（HTTP {exc.status_code}）。",
                 ) from exc
             raise CapabilityError(
-                ErrorCode.PROVIDER_UNAVAILABLE, f"LLM 服务不可可用：{exc.message}"
+                ErrorCode.PROVIDER_UNAVAILABLE, "LLM 服务暂不可用，请稍后重试。"
             ) from exc
         except anthropic.APITimeoutError as exc:
-            raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, f"LLM 调用超时：{exc}") from exc
+            raise CapabilityError(ErrorCode.PROVIDER_TIMEOUT, "LLM 调用超时，请稍后重试。") from exc
         except Exception as exc:
-            raise CapabilityError(ErrorCode.INTERNAL_ERROR, f"LLM 调用失败：{exc}") from exc
+            raise CapabilityError(ErrorCode.INTERNAL_ERROR, "LLM 调用失败，请稍后重试。") from exc
 
         text = "".join(block.text for block in response.content if block.type == "text")
         return LLMResponse(

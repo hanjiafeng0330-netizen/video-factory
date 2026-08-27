@@ -21,6 +21,7 @@ from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from app.api.deps import container_of
 from app.api.xlsx_export import build_analysis_workbook
+from app.capabilities.registry import CapabilityRegistry
 from app.domain.assets import RightsStatus
 from app.domain.capability import CapabilityRequest
 from app.domain.errors import CapabilityError, ErrorCode
@@ -59,6 +60,21 @@ def _load_analysis(analysis_id: str) -> dict[str, Any] | None:
     if path.exists():
         return cast(dict[str, Any], json.loads(path.read_text()))
     return None
+
+
+def _llm_capabilities_for_request(request: Request, *, zcode_plan_key: str) -> CapabilityRegistry:
+    """选择仅用于本次 LLM 调用的 key，绝不写入能力请求或分析结果。"""
+    container = container_of(request)
+    if zcode_plan_key == "5688":
+        configured_key = container.settings.llm.api_key
+        if configured_key is None:
+            raise CapabilityError(ErrorCode.INVALID_PARAMETERS, "默认 LLM API key 未配置")
+        api_key = configured_key.get_secret_value()
+    elif not zcode_plan_key:
+        raise CapabilityError(ErrorCode.INVALID_PARAMETERS, "请填写 zcode plan key")
+    else:
+        api_key = zcode_plan_key
+    return container.llm_capabilities_for(api_key)
 
 
 def _list_analyses() -> list[dict[str, Any]]:
@@ -133,6 +149,29 @@ async def upload_hot_video_to_library(
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+def _analysis_package_summary(analysis_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    stages = {
+        "preprocess": bool((data.get("preprocess") or {}).get("ref")),
+        "video_understand": bool((data.get("video_understand") or {}).get("ref")),
+        "marketing_analysis": bool((data.get("marketing_analysis") or {}).get("ref")),
+    }
+    status = (
+        "marketing_complete"
+        if stages["marketing_analysis"]
+        else "video_understand_complete"
+        if stages["video_understand"]
+        else "preprocess_complete"
+    )
+    return {
+        "id": analysis_id,
+        "created_at": data.get("created_at", ""),
+        "video_name": data.get("video_name", ""),
+        "shot_count": len((data.get("shot_script") or {}).get("entries", [])),
+        "stages": stages,
+        "status": status,
+    }
+
+
 @router.get("/hot-videos")
 async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
     """热点视频库：逻辑视频、入库版本与关联分析包摘要。"""
@@ -146,16 +185,18 @@ async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
         data = _load_analysis(session["id"])
         if data:
             hot_ref = (data.get("hot_video") or {}).get("ref", "")
-            packages_by_hot.setdefault(hot_ref, []).append(session)
+            packages_by_hot.setdefault(hot_ref, []).append(
+                _analysis_package_summary(session["id"], data)
+            )
 
     videos: list[dict[str, Any]] = []
     for version in latest_by_id.values():
         body = dict(version.body)
         ref = str(version.ref)
         packages = packages_by_hot.get(ref, [])
-        has_preprocess = any(p.get("preprocess", {}).get("ref") for p in packages)
-        has_understand = any((p.get("video_understand") or {}).get("ref") for p in packages)
-        has_marketing = any((p.get("marketing_analysis") or {}).get("ref") for p in packages)
+        has_preprocess = any(p.get("stages", {}).get("preprocess", False) for p in packages)
+        has_understand = any(p.get("stages", {}).get("video_understand", False) for p in packages)
+        has_marketing = any(p.get("stages", {}).get("marketing_analysis", False) for p in packages)
         if has_marketing:
             processing_state = "market_analyzed"
         elif has_understand:
@@ -499,6 +540,7 @@ async def step3_video_understand(
     analysis_id: Annotated[str, Form()] = "",
     vision_model: Annotated[str, Form()] = "",
     transcript_ref: Annotated[str, Form()] = "",
+    zcode_plan_key: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤3：视频理解，调用LLM分析每个镜头。"""
     container = container_of(request)
@@ -527,7 +569,10 @@ async def step3_video_understand(
     # 调用视频理解能力。用户可以选择步骤2关联的 exact transcript 版本。
     selected_transcript_ref = _parse_ref(transcript_ref) if transcript_ref else None
     input_refs = (pre_ref,) + ((selected_transcript_ref,) if selected_transcript_ref else ())
-    vu = container.capabilities.get("video_understand")
+    vu = _llm_capabilities_for_request(
+        request,
+        zcode_plan_key=zcode_plan_key,
+    ).get("video_understand")
     run_id = uuid.uuid4().hex[:12]
     vu_result = await vu.execute(
         CapabilityRequest(
@@ -612,6 +657,7 @@ async def step4_marketing_analysis(
     shot_script_ref: Annotated[str, Form()],
     analysis_id: Annotated[str, Form()] = "",
     text_model: Annotated[str, Form()] = "",
+    zcode_plan_key: Annotated[str, Form()] = "",
 ) -> dict[str, Any]:
     """步骤 4：营销分析，调用 LLM 提取营销口径（钩子/痛点/卖点结构/视觉风格）。"""
     container = container_of(request)
@@ -631,7 +677,10 @@ async def step4_marketing_analysis(
     )
 
     # 调用营销分析能力
-    ma = container.capabilities.get("marketing_analysis")
+    ma = _llm_capabilities_for_request(
+        request,
+        zcode_plan_key=zcode_plan_key,
+    ).get("marketing_analysis")
     run_id = uuid.uuid4().hex[:12]
     ma_result = await ma.execute(
         CapabilityRequest(

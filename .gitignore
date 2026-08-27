@@ -32,4 +32,5 @@ build/
 # 实测漏过一次——1MB 的视频与关键帧被提交进了仓库。
 /tmp/
 /.local_assets/
+/.local_analyses/
 /local_assets/

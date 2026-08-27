@@ -11,8 +11,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI
 
@@ -21,12 +22,27 @@ from app.adapters.llm.anthropic import AnthropicClient
 from app.adapters.media.ffmpeg import FfmpegMediaTool
 from app.adapters.media.scene_detect import SceneDetectShotDetector
 from app.capabilities.registry import CapabilityDeps, CapabilityRegistry, build_capabilities
+from app.domain.errors import CapabilityError, ErrorCode
 from app.platform.config import Settings, load_settings
 from app.prompts.registry import InMemoryPromptRegistry
 from app.prompts.seed import seed_and_activate_prompts
 from app.storage.memory_governance import InMemoryAuditLog, InMemoryIdempotencyStore
 from app.storage.memory_lineage import InMemoryLineage
 from app.storage.sqlite_dev import PersistentLocalAssetStore, SQLiteArtifactRepository
+
+
+class _UnconfiguredLLM:
+    """占位实现：手动 key 的请求级能力仍可用，默认能力会给出安全提示。"""
+
+    def vision(self, **_: Any) -> Any:
+        raise CapabilityError(
+            ErrorCode.INVALID_PARAMETERS, "未配置默认 LLM API key，请填写手动 API key"
+        )
+
+    def text(self, **_: Any) -> Any:
+        raise CapabilityError(
+            ErrorCode.INVALID_PARAMETERS, "未配置默认 LLM API key，请填写手动 API key"
+        )
 
 
 @dataclass(frozen=True)
@@ -41,6 +57,16 @@ class DevContainer:
     idempotency: InMemoryIdempotencyStore
     audit: InMemoryAuditLog
     prompts: InMemoryPromptRegistry
+    capability_deps: CapabilityDeps
+
+    def llm_capabilities_for(self, api_key: str) -> CapabilityRegistry:
+        """为一次 dev-UI LLM 请求创建独立能力实例，不保留传入密钥。"""
+        llm = AnthropicClient(
+            base_url=self.settings.llm.base_url,
+            api_key=api_key,
+            timeout=self.settings.llm.timeout_seconds,
+        )
+        return build_capabilities(replace(self.capability_deps, llm=llm))
 
 
 def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
@@ -63,43 +89,46 @@ def build_dev_container(settings: Settings, asset_root: Path) -> DevContainer:
     audit = InMemoryAuditLog()
     media = FfmpegMediaTool()
 
-    # LLM 客户端
-    if settings.llm.api_key is None:
-        raise RuntimeError("开发档需要配置 LLM API 密钥。请在 .env.dev 中设置 VF_LLM__API_KEY")
-    llm = AnthropicClient(
-        base_url=settings.llm.base_url,
-        api_key=settings.llm.api_key.get_secret_value(),
-        timeout=settings.llm.timeout_seconds,
+    # 默认 LLM key 未配置时仍允许启动：dev UI 可为单次请求提供手动 key。
+    llm = (
+        AnthropicClient(
+            base_url=settings.llm.base_url,
+            api_key=settings.llm.api_key.get_secret_value(),
+            timeout=settings.llm.timeout_seconds,
+        )
+        if settings.llm.api_key is not None
+        else _UnconfiguredLLM()
     )
 
     # 提示词注册表并激活
     prompts = InMemoryPromptRegistry(audit=audit)
     seed_and_activate_prompts(prompts, actor="bootstrap")
 
+    capability_deps = CapabilityDeps(
+        artifacts=artifacts,
+        assets=assets,
+        probe=media,
+        audio=media,
+        shots=SceneDetectShotDetector(),
+        frames=media,
+        # 模型懒加载：首次转写时才下载，不拖慢进程启动。
+        recognizer=FasterWhisperRecognizer(),
+        llm=llm,
+        prompts=prompts,
+        vision_model=settings.llm.vision_model,
+        text_model=settings.llm.text_model,
+    )
+
     return DevContainer(
         settings=settings,
-        capabilities=build_capabilities(
-            CapabilityDeps(
-                artifacts=artifacts,
-                assets=assets,
-                probe=media,
-                audio=media,
-                shots=SceneDetectShotDetector(),
-                frames=media,
-                # 模型懒加载：首次转写时才下载，不拖慢进程启动。
-                recognizer=FasterWhisperRecognizer(),
-                llm=llm,
-                prompts=prompts,
-                vision_model=settings.llm.vision_model,
-                text_model=settings.llm.text_model,
-            )
-        ),
+        capabilities=build_capabilities(capability_deps),
         artifacts=artifacts,
         assets=assets,
         lineage=lineage,
         idempotency=InMemoryIdempotencyStore(),
         audit=audit,
         prompts=prompts,
+        capability_deps=capability_deps,
     )
 
 

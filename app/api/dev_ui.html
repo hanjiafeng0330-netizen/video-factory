@@ -66,6 +66,24 @@
     background: var(--panel); border: 1px solid var(--line);
     border-radius: 10px; padding: 20px; margin-bottom: 20px;
   }
+  .analysis-modal { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:24px; }
+  .analysis-modal[hidden] { display:none; }
+  .analysis-modal-backdrop { position:absolute; inset:0; background:#000b; }
+  .analysis-modal-dialog { position:relative; width:min(1180px,100%); max-height:calc(100dvh - 48px); overflow:auto; overscroll-behavior:contain; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:0 24px 70px #0009; }
+  .analysis-modal-dialog > header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:12px; }
+  body:has(.analysis-modal:not([hidden])) { overflow:hidden; }
+  .workspace-header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; padding:22px 0; border-bottom:1px solid var(--line); margin-bottom:20px; }
+  .workspace-header h1 { font-size:24px; margin:2px 0; }
+  .eyebrow { color:var(--accent); font-size:12px; font-weight:700; letter-spacing:.1em; }
+  .workspace-grid { display:grid; grid-template-columns:minmax(0, 1fr) 280px; gap:20px; align-items:start; }
+  .workspace-main { min-width:0; }
+  .workspace-inspector { position:sticky; top:18px; margin:0; }
+  .workspace-monitor { padding:0; overflow:hidden; background:#080a0e; }
+  .workspace-monitor video { width:100%; max-height:520px; display:block; background:#000; }
+  .workspace-monitor .tech-id { padding:10px 14px; margin:0; }
+  #workspace-shots .sentry { cursor:pointer; border-left:3px solid transparent; }
+  #workspace-shots .sentry:hover { border-left-color:var(--accent); background:#1d2430; }
+  @media (max-width: 820px) { .workspace-grid { grid-template-columns:1fr; } .workspace-inspector { position:static; } .workspace-header { flex-direction:column; } }
   .library-card { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
   .library-preview { min-height: 180px; background: #0a0c10; border-radius: 8px; overflow: hidden; }
   .library-preview video { width: 100%; height: 280px; object-fit: contain; display: block; }
@@ -166,9 +184,9 @@
 </head>
 <body>
 <header>
-  <h1>营销视频生产系统</h1>
+  <h1>营销视频分析工作台</h1>
   <div style="display:flex;gap:10px;align-items:center;">
-    <button class="nav-button active" id="nav-analysis" onclick="showPage('analysis')">步骤化分析</button>
+    <button class="nav-button active" id="nav-analysis" onclick="showPage('analysis')">分析工作台</button>
     <button class="nav-button" id="nav-library" onclick="showPage('library')">热点视频库</button>
     <button class="nav-button" id="nav-prompts" onclick="showPage('prompts')">提示词配置</button>
   </div>
@@ -306,10 +324,14 @@
               <option value="">加载模型中...</option>
             </select>
           </div>
+          <div class="field">
+            <label>zcode plan key</label>
+            <input type="password" name="zcode_plan_key" autocomplete="off">
+          </div>
           <button type="submit" id="btn3">开始分析</button>
         </div>
       </form>
-      <p class="hint">只显示支持视觉输入的模型。额度耗尽时可切换其他模型后重试。</p>
+      <p class="hint">只显示支持视觉输入的模型。zcode plan key 填写默认口令时使用当前默认 key；填写其他值时直接作为本次 API key。</p>
     </div>
     <div id="result3" class="hidden"></div>
   </div>
@@ -332,15 +354,22 @@
               <option value="">加载模型中...</option>
             </select>
           </div>
+          <div class="field">
+            <label>zcode plan key</label>
+            <input type="password" name="zcode_plan_key" autocomplete="off">
+          </div>
           <button type="submit" id="btn4">开始营销分析</button>
         </div>
       </form>
-      <p class="hint">只显示支持文本分析的模型。gpt-image-2 仅用于后续生图，不出现在此处。</p>
+      <p class="hint">只显示支持文本分析的模型。zcode plan key 填写默认口令时使用当前默认 key；填写其他值时直接作为本次 API key。gpt-image-2 仅用于后续生图，不出现在此处。</p>
     </div>
     <div id="result4" class="hidden"></div>
   </div>
 </main>
 </div>
+
+<!-- 分析结果工作区 -->
+<div id="analysis-modal" class="analysis-modal" hidden><div class="analysis-modal-backdrop" onclick="closeAnalysisModal()"></div><section class="analysis-modal-dialog" role="dialog" aria-modal="true"><header><b>分析结果</b><button class="secondary" onclick="closeAnalysisModal()">关闭</button></header><div id="workspace-content"></div></section></div>
 
 <!-- 热点视频库页面 -->
 <div id="page-library" style="display:none;">
@@ -437,6 +466,12 @@ async function uploadLibraryVideo(event) {
   loadHotVideos();
 }
 
+function analysisPackageLabel(pkg) {
+  if (pkg.status === 'marketing_complete') return '营销分析结果';
+  if (pkg.status === 'video_understand_complete' || pkg.has_visual_description) return '视频理解结果';
+  return '预处理结果';
+}
+
 function renderHotVideos(videos) {
   if (!videos.length) {
     $('hot-videos-list').innerHTML = '<p class="hint">暂无已上传视频</p>';
@@ -461,8 +496,10 @@ function renderHotVideos(videos) {
         <button class="secondary" style="padding:5px 10px;font-size:11px;" onclick="useLibraryVideo('${v.ref}')">用于预处理</button>
         ${(v.available_actions || []).includes('video_understand') ? `<button class="secondary" style="padding:5px 10px;font-size:11px;margin-left:6px;" onclick="alert('请先选择该视频的预处理结果')">视频理解</button>` : ''}
         ${(v.analysis_packages || []).map(a => `
-          <button class="analysis-package-button" onclick="viewAnalysis('${a.id}')">
-            打开分析包 · ${a.shot_count}镜头
+          <button class="analysis-package-button"
+                  data-analysis-id="${escapeHtml(a.id)}"
+                  onclick="openAnalysisWorkspace('${escapeHtml(a.id)}')">
+            ${analysisPackageLabel(a)} · ${a.shot_count}镜头 · ${escapeHtml(a.id.slice(0, 8))}
           </button>
         `).join('') || '<span class="hint" style="margin-left:8px;">暂无分析包</span>'}
       </div>
@@ -522,35 +559,43 @@ function renderAnalysisHistory(analyses) {
   `;
 }
 
-// 查看分析详情
-async function viewAnalysis(analysisId) {
-  try {
-    const resp = await fetch(`/dev/analyses/${analysisId}`);
-    const data = await resp.json();
-    // 恢复到分析结果状态。analysis_id 必须恢复，否则后续重跑无法写回原分析包。
-    state.analysis_id = analysisId;
-    state.hot_video = { ref: data.hot_video.ref, original_filename: data.video_name };
-    state.preprocess = data.preprocess;
-    state.transcript = data.transcript;
-    state.shot_script = data.shot_script;
-    state.marketing_analysis = data.marketing_analysis || null;
-    if (data.video_understand && data.video_understand.ref) {
-      state.video_understand = data.video_understand;
-    }
-    // 显示结果
-    renderStep2Result(data);
-    if (data.video_understand && data.video_understand.ref) {
-      renderStep3Result(data);
-    }
-    if (data.marketing_analysis && data.marketing_analysis.ref) {
-      renderStep4Result(data);
-    }
-    showStep(data.marketing_analysis && data.marketing_analysis.ref ? 4 :
-             data.video_understand && data.video_understand.ref ? 3 : 2);
-  } catch (err) {
-    alert(`加载失败：${err}`);
-  }
+let analysisModalTrigger = null;
+
+function closeAnalysisModal() {
+  const video = $('workspace-video');
+  if (video) video.pause();
+  $('analysis-modal').hidden = true;
+  analysisModalTrigger?.focus();
+  analysisModalTrigger = null;
 }
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('analysis-modal').hidden) closeAnalysisModal();
+});
+
+async function openAnalysisWorkspace(analysisId) {
+  analysisModalTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  $('analysis-modal').hidden = false;
+  $('workspace-content').innerHTML = '<p class="hint">正在加载分析结果…</p>';
+  try {
+    const resp = await fetch(`/dev/analyses/${encodeURIComponent(analysisId)}`);
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+    const ss = data.shot_script || { entries: [] };
+    const ma = data.marketing_analysis;
+    const videos = await (await fetch('/dev/hot-videos')).json();
+    const video = videos.find(v => v.ref === data.hot_video?.ref);
+    const monitor = video?.asset_id
+      ? `<video id="workspace-video" controls preload="metadata" playsinline src="/dev/assets/${video.asset_id}"></video>`
+      : '<div class="preview-missing">源视频预览不可用</div>';
+    $('workspace-content').innerHTML = `
+      <div class="workspace-header"><div><span class="eyebrow">分析结果</span><h1>${escapeHtml(data.video_name || '未命名视频')}</h1><p class="tech-id">分析包 ${escapeHtml(analysisId)} · ${ss.entries.length} 镜头</p></div><div><button class="secondary" onclick="closeAnalysisModal()">关闭</button> <a href="/dev/analyses/${analysisId}/export.xlsx"><button>导出 Excel</button></a></div></div>
+      <div class="workspace-grid"><section class="workspace-main"><div class="panel workspace-monitor">${monitor}<div class="tech-id">${escapeHtml(video?.source_platform || '')} · ${escapeHtml(video?.rights_status || '')}</div></div><div class="panel"><h2>镜头与台词</h2><div id="workspace-shots"></div></div>${ma ? `<div class="panel"><h2>营销分析</h2><h3>钩子</h3><p>${escapeHtml(ma.hook || '未识别')}</p><h3>痛点</h3><p>${escapeHtml(ma.pain_points || '未识别')}</p><h3>卖点结构</h3><p>${escapeHtml(ma.selling_point_structure || '未识别')}</p></div>` : ''}</section><aside class="workspace-inspector panel"><h2>分析阶段</h2><p>预处理 ${data.preprocess?.ref ? '完成' : '未完成'}</p><p>视频理解 ${data.video_understand?.ref ? '完成' : '未完成'}</p><p>营销分析 ${ma?.ref ? '完成' : '未完成'}</p></aside></div>`;
+    renderShotScript(ss, 'workspace-shots');
+  } catch (err) { $('workspace-content').innerHTML = `<div class="err">加载分析结果失败：${escapeHtml(String(err))}</div>`; }
+}
+
+const viewAnalysis = openAnalysisWorkspace;
 
 // 加载提示词列表
 async function loadPrompts() {
@@ -781,9 +826,14 @@ function renderStep2Result(d) {
   renderShotScript(ss);
 }
 
+function seekWorkspaceVideo(startMs) {
+  const video = $('workspace-video');
+  if (video) { video.currentTime = startMs / 1000; video.play(); }
+}
+
 function renderShotScript(ss, containerId = 'shotScript') {
   $(containerId).innerHTML = ss.entries.map((e) => `
-    <div class="sentry">
+    <div class="sentry" ${containerId === 'workspace-shots' ? `onclick="seekWorkspaceVideo(${e.start_ms})"` : ''}>
       <div class="frames-strip">
         ${(e.keyframe_asset_ids || []).length === 0
           ? `<div class="ph">无关键帧</div>`
