@@ -519,6 +519,14 @@ async function loadAnalysisHistory() {
   }
 }
 
+function stageStatus(status) {
+  return {
+    complete: '<span class="tag">完成</span>',
+    failed: '<span class="tag" style="background:#4a1f27;color:#ffb5bd">失败</span>',
+    not_run: '<span class="hint">未执行</span>',
+  }[status] || '<span class="hint">未执行</span>';
+}
+
 // 渲染分析历史
 function renderAnalysisHistory(analyses) {
   if (analyses.length === 0) {
@@ -530,10 +538,11 @@ function renderAnalysisHistory(analyses) {
       <thead>
         <tr>
           <th>时间</th>
-          <th>视频</th>
-          <th>镜头数</th>
+          <th>源视频</th>
+          <th>预处理</th>
           <th>转写</th>
-          <th>画面描述</th>
+          <th>视频理解</th>
+          <th>营销分析</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -541,10 +550,11 @@ function renderAnalysisHistory(analyses) {
         ${analyses.map(a => `
           <tr>
             <td style="font-size:11px;">${new Date(a.created_at).toLocaleString()}</td>
-            <td style="font-size:11px;">${a.video_name.substring(0, 20)}...</td>
-            <td>${a.shot_count}</td>
-            <td>${a.has_transcript ? '✓' : '-'}</td>
-            <td>${a.has_visual_description ? '✓' : '-'}</td>
+            <td><div>${escapeHtml(a.video_filename)}</div><div class="tech-id" style="margin:2px 0 0;">${escapeHtml(a.hot_video_id || '-')}</div></td>
+            <td>${stageStatus(a.preprocess_status)}<div class="hint">${a.shot_count} 镜头</div></td>
+            <td>${stageStatus(a.transcript_status)}</td>
+            <td>${stageStatus(a.video_understand_status)}</td>
+            <td>${stageStatus(a.marketing_analysis_status)}</td>
             <td>
               <button class="secondary" style="padding:3px 8px;font-size:11px;margin-right:4px;"
                       onclick="viewAnalysis('${a.id}')">查看</button>

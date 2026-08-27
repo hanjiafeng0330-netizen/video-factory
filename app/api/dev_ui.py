@@ -244,10 +244,56 @@ async def list_hot_videos(request: Request) -> list[dict[str, Any]]:
 # ============================================================================
 # 分析历史与导出
 # ============================================================================
+def _analysis_history_row(
+    analysis_id: str, data: dict[str, Any], request: Request
+) -> dict[str, Any]:
+    hot_ref_text = (data.get("hot_video") or {}).get("ref", "")
+    video_id = data.get("video_name", "")
+    filename = data.get("video_filename")
+    if hot_ref_text:
+        try:
+            hot_ref = _parse_ref(hot_ref_text)
+            hot = container_of(request).artifacts.get(hot_ref)
+            video_id = hot.id
+            filename = hot.body.get("original_filename") or filename
+        except CapabilityError:
+            pass
+
+    transcript = data.get("transcript")
+    transcript_status = (
+        "complete"
+        if (transcript or {}).get("ref")
+        else "failed"
+        if (transcript or {}).get("error")
+        else "not_run"
+    )
+    return {
+        "id": analysis_id,
+        "created_at": data.get("created_at", ""),
+        "video_filename": filename or "未记录文件名",
+        "hot_video_id": video_id,
+        "hot_video_ref": hot_ref_text,
+        "shot_count": len((data.get("shot_script") or {}).get("entries", [])),
+        "preprocess_status": "complete" if (data.get("preprocess") or {}).get("ref") else "not_run",
+        "transcript_status": transcript_status,
+        "video_understand_status": "complete"
+        if (data.get("video_understand") or {}).get("ref")
+        else "not_run",
+        "marketing_analysis_status": "complete"
+        if (data.get("marketing_analysis") or {}).get("ref")
+        else "not_run",
+    }
+
+
 @router.get("/analyses")
 async def list_analyses(request: Request) -> list[dict[str, Any]]:
-    """列出所有分析结果。"""
-    return _list_analyses()
+    """列出分析历史及其流程阶段状态。"""
+    rows = []
+    for summary in _list_analyses():
+        data = _load_analysis(summary["id"])
+        if data:
+            rows.append(_analysis_history_row(summary["id"], data, request))
+    return rows
 
 
 @router.get("/analyses/{analysis_id}")
@@ -469,6 +515,9 @@ async def step2_preprocess(
         "analysis_id": run_id,
         "created_at": __import__("datetime").datetime.now().isoformat(),
         "video_name": str(hot_ref.id),
+        "video_filename": str(
+            container.artifacts.get(hot_ref).body.get("original_filename", "未记录文件名")
+        ),
         "preprocess": {
             "ref": str(out_ref),
             "metadata": body["metadata"],
